@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: churn-risk-error-budget-policy
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: slo-error-budget
+data:
+  policy: |
+    multiwindow burn alerts:
+      fast_page: 14.4 burn over 5m and 1h
+      slow_page: 6.0 burn over 30m and 6h
+      ticket: 1.0 burn over 6h and 3d
+    release freeze:
+      freeze promotions when page or hold_release SLOs fire
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: churn-risk-slo-burn-rate
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: slo-error-budget
+spec:
+  groups:
+    - name: churn-risk.slo.multiwindow
+      rules:
+        - alert: SLOBurnRateHigh
+          expr: |
+            (
+              sum(rate(churn_prediction_errors_total[5m])) / sum(rate(churn_prediction_requests_total[5m])) > (14.4 * 0.005)
+            )
+            and
+            (
+              sum(rate(churn_prediction_errors_total[1h])) / sum(rate(churn_prediction_requests_total[1h])) > (14.4 * 0.005)
+            )
+          for: 2m
+          labels:
+            severity: page
+            slo: online_inference_availability
+          annotations:
+            summary: "Churn inference is burning error budget too quickly"
+            runbook: "docs/slo-error-budget.md"
+        - alert: SLOBurnRateMedium
+          expr: |
+            (
+              sum(rate(churn_prediction_errors_total[30m])) / sum(rate(churn_prediction_requests_total[30m])) > (6 * 0.005)
+            )
+            and
+            (
+              sum(rate(churn_prediction_errors_total[6h])) / sum(rate(churn_prediction_requests_total[6h])) > (6 * 0.005)
+            )
+          for: 15m
+          labels:
+            severity: page
+            slo: online_inference_availability
+          annotations:
+            summary: "Sustained burn-rate breach for churn inference"
+            runbook: "docs/slo-error-budget.md"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: churn-risk-error-budget-freeze-sync
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: slo-error-budget
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: sync
+              image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform@sha256:replace-with-built-image-digest
+              command: ["python", "-m", "kube_mlops_platform", "slo-report", "--output", "/workspace"]
+              env:
+                - name: AIRFLOW_RELEASE_FREEZE_VARIABLE
+                  value: "mlops_release_freeze"
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true

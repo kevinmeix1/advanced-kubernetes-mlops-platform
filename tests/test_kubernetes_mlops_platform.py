@@ -19,6 +19,7 @@ from kube_mlops_platform.policy_audit import audit_platform_policy
 from kube_mlops_platform.registry import rollback
 from kube_mlops_platform.resource_optimizer import build_resource_optimization_report
 from kube_mlops_platform.serving import health
+from kube_mlops_platform.slo import build_slo_report
 from kube_mlops_platform.traceability import build_trace_report
 from kube_mlops_platform.validation import validate_dataset
 
@@ -188,6 +189,22 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual(model_card["name"], "kserve-churn-risk-baseline")
             self.assertTrue(any(item["exists"] and len(item["sha256"]) == 64 for item in manifest["artifact_hashes"]))
             self.assertTrue((root / "reports" / "governance_evidence_bundle.json").exists())
+
+    def test_slo_error_budget_report_and_alert_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        alerts = (repo / "kubernetes" / "slo-alerts.yaml").read_text(encoding="utf-8")
+
+        for expected in ["PrometheusRule", "SLOBurnRateHigh", "multiwindow", "error-budget-freeze"]:
+            self.assertIn(expected, alerts)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            report = build_slo_report(root)
+
+            self.assertIn(result["slo_error_budget"]["recommended_action"], {"freeze_promotion_and_page", "hold_canary_and_open_incident"})
+            self.assertEqual(report["slos"][0]["name"], "online_inference_availability")
+            self.assertTrue(any(item["name"] == "feature_drift_clean_window" for item in report["slos"]))
+            self.assertTrue((root / "reports" / "slo_error_budget.json").exists())
 
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

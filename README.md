@@ -112,6 +112,8 @@ For backup schedules, restore order, and RPO/RTO evidence, see [disaster recover
 
 For model cards, data cards, risk records, approval evidence, and reproducibility hashes, see [governance evidence](docs/governance-evidence.md).
 
+For multi-window burn alerts, error-budget reports, and release-freeze automation, see [SLO and error budget automation](docs/slo-error-budget.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

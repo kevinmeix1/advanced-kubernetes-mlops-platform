@@ -20,6 +20,7 @@ from .policy_audit import audit_platform_policy
 from .registry import champion_metadata, promote_candidate, register_candidate, rollback as rollback_model, log_mlflow_run
 from .resource_optimizer import build_resource_optimization_report
 from .serving import deploy_local_kserve, health, predict
+from .slo import build_slo_report
 from .traceability import build_trace_report
 from .validation import validate_dataset
 
@@ -131,6 +132,13 @@ def governance(output: str | Path) -> dict:
     return build_governance_bundle(root)
 
 
+def slo_report(output: str | Path) -> dict:
+    root = root_path(output)
+    if not (root / "reports" / "monitoring_report.json").exists():
+        monitor(root)
+    return build_slo_report(root)
+
+
 def rollback(output: str | Path) -> dict:
     return rollback_model(root_path(output))
 
@@ -150,6 +158,7 @@ def demo(output: str | Path) -> dict:
     gitops_plan = build_gitops_plan(root)
     disaster_recovery = build_disaster_recovery_plan(root)
     governance_bundle = build_governance_bundle(root)
+    slo_error_budget = build_slo_report(root)
     return {
         "train": {"model_version": train_result["model"]["version"], "validation_passed": train_result["validation"]["passed"]},
         "evaluate": eval_result,
@@ -165,6 +174,7 @@ def demo(output: str | Path) -> dict:
         "gitops_plan": gitops_plan,
         "disaster_recovery": disaster_recovery,
         "governance_bundle": governance_bundle,
+        "slo_error_budget": slo_error_budget,
     }
 
 
@@ -189,6 +199,7 @@ def main(argv: list[str] | None = None) -> int:
         "gitops-plan",
         "dr-plan",
         "governance-bundle",
+        "slo-report",
     ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
@@ -229,4 +240,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_disaster_recovery_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "governance-bundle":
         print(json.dumps(governance(args.output), indent=2, sort_keys=True))
+    elif args.command == "slo-report":
+        print(json.dumps(slo_report(args.output), indent=2, sort_keys=True))
     return 0
