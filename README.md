@@ -96,6 +96,8 @@ For the Kubernetes/Airflow robustness layer, see [Kubernetes and Airflow robustn
 
 For the operator-facing release planner, see [advanced control plane layer](docs/control-plane-depth.md).
 
+For the policy-as-code audit layer, see [security and governance](docs/security-governance.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

@@ -10,6 +10,7 @@ from kube_mlops_platform.data import generate_churn_dataset, split_rows
 from kube_mlops_platform.gates import evaluate_gates
 from kube_mlops_platform.io import read_csv, read_json, read_jsonl, write_json
 from kube_mlops_platform.model import predict_score, train_model
+from kube_mlops_platform.policy_audit import audit_platform_policy
 from kube_mlops_platform.registry import rollback
 from kube_mlops_platform.serving import health
 from kube_mlops_platform.validation import validate_dataset
@@ -63,6 +64,21 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
 
         for expected in ["ScaledObject", "prometheus", "fallback", "horizontalPodAutoscalerConfig", "activationThreshold"]:
             self.assertIn(expected, autoscaling)
+
+    def test_admission_policies_and_policy_audit_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        admission = (repo / "kubernetes" / "admission-policies.yaml").read_text(encoding="utf-8")
+
+        for expected in ["ValidatingAdmissionPolicy", "ValidatingAdmissionPolicyBinding", "ImageValidatingPolicy", "slsa-provenance"]:
+            self.assertIn(expected, admission)
+        with tempfile.TemporaryDirectory() as tmp:
+            report = audit_platform_policy(repo, output_root=tmp)
+            passed = {check["name"] for check in report["checks"] if check["passed"]}
+            self.assertIn("pod_security_restricted", passed)
+            self.assertIn("event_driven_scaling", passed)
+            self.assertIn("no_latest_image_tags", report["failed_checks"])
+            self.assertIn("immutable_image_digest", report["failed_checks"])
+            self.assertTrue((Path(tmp) / "reports" / "policy_audit.json").exists())
 
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
