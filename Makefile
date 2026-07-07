@@ -1,4 +1,4 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan minikube-up kubernetes-plan test clean
+.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan minikube-up kubernetes-plan test clean
 
 demo:
 	PYTHONPATH=src python3 -m kube_mlops_platform demo --output .local
@@ -45,6 +45,9 @@ network-security:
 gitops-plan:
 	PYTHONPATH=src python3 -m kube_mlops_platform gitops-plan --output .local
 
+dr-plan:
+	PYTHONPATH=src python3 -m kube_mlops_platform dr-plan --output .local
+
 minikube-up:
 	@echo "Start Minikube and install KServe, then apply manifests:"
 	@echo "  minikube start --cpus=4 --memory=8192"
@@ -55,6 +58,7 @@ minikube-up:
 	@echo "  kubectl apply -f kubernetes/resource-optimization.yaml"
 	@echo "  kubectl apply -f kubernetes/network-security.yaml"
 	@echo "  kubectl apply -f kubernetes/chaos-experiments.yaml"
+	@echo "  kubectl apply -f kubernetes/disaster-recovery.yaml"
 	@echo "  kubectl apply -f gitops/gitops-promotion.yaml"
 	@echo "  kubectl apply -f monitoring/prometheus/prometheus.yml"
 

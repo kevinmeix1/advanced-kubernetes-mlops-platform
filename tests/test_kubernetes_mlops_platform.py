@@ -8,6 +8,7 @@ from kube_mlops_platform.chaos import run_chaos_drill
 from kube_mlops_platform.cli import demo, train
 from kube_mlops_platform.control_plane import build_release_plan, evaluate_release_policy
 from kube_mlops_platform.data import generate_churn_dataset, split_rows
+from kube_mlops_platform.disaster_recovery import build_disaster_recovery_plan
 from kube_mlops_platform.gates import evaluate_gates
 from kube_mlops_platform.gitops_release import build_gitops_plan
 from kube_mlops_platform.io import read_csv, read_json, read_jsonl, write_json
@@ -153,6 +154,20 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual(plan["sync_waves"][0]["wave"], -3)
             self.assertTrue(any(stage["environment"] == "prod" and stage["sync"] == "manual" for stage in plan["promotion_stages"]))
             self.assertTrue((Path(tmp) / "reports" / "gitops_plan.json").exists())
+
+    def test_disaster_recovery_plan_and_backup_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        dr = (repo / "kubernetes" / "disaster-recovery.yaml").read_text(encoding="utf-8")
+
+        for expected in ["kind: Schedule", "BackupStorageLocation", "VolumeSnapshotClass", "restore-order"]:
+            self.assertIn(expected, dr)
+        with tempfile.TemporaryDirectory() as tmp:
+            plan = build_disaster_recovery_plan(tmp)
+
+            self.assertLessEqual(plan["rpo_minutes"], 30)
+            self.assertEqual(plan["restore_sequence"][0]["asset"], "namespace and CRDs")
+            self.assertTrue(any(item["asset"] == "MLflow registry and artifacts" for item in plan["restore_sequence"]))
+            self.assertTrue((Path(tmp) / "reports" / "disaster_recovery_plan.json").exists())
 
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

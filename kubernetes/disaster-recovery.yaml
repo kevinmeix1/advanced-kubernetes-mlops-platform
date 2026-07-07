@@ -1,0 +1,66 @@
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: mlops-backup-location
+  namespace: velero
+spec:
+  provider: aws
+  objectStorage:
+    bucket: mlops-platform-backups
+    prefix: advanced-kubernetes-mlops-platform
+  config:
+    region: us-east-1
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: mlops-namespace-30m
+  namespace: velero
+spec:
+  schedule: "*/30 * * * *"
+  template:
+    includedNamespaces:
+      - mlops
+    snapshotVolumes: true
+    ttl: 168h0m0s
+    storageLocation: mlops-backup-location
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: mlops-retain-snapshots
+driver: csi.example.com
+deletionPolicy: Retain
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: airflow-metadata-logical-backup
+  namespace: mlops
+spec:
+  schedule: "*/30 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-dump
+              image: postgres:16
+              env:
+                - name: PGDATABASE
+                  value: airflow
+              command: ["sh", "-c", "pg_dump --format=custom --file=/backup/airflow-$(date +%Y%m%d%H%M%S).dump"]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: restore-order
+  namespace: mlops
+data:
+  restore-order.yaml: |
+    - namespace-and-crds
+    - network-policy-quota-and-admission
+    - airflow-metadata-database
+    - mlflow-registry-and-artifacts
+    - kserve-runtime
