@@ -90,6 +90,8 @@ make test         # run unit and integration tests
 
 See [production-grade refinements](docs/production-grade-refinements.md) for the Kubernetes, Airflow, KServe, registry, rollback, and monitoring improvements that make this more than a toy demo.
 
+For the latest heavyweight orchestration pass, see [advanced orchestration assessment](docs/advanced-orchestration-assessment.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

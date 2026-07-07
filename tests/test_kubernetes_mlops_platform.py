@@ -15,6 +15,19 @@ from kube_mlops_platform.validation import validate_dataset
 
 
 class KubernetesMLOpsPlatformTest(unittest.TestCase):
+    def test_advanced_airflow_and_kubernetes_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        dag = repo / "airflow" / "dags" / "enterprise_kubernetes_mlops_release_dag.py"
+        workloads = repo / "kubernetes" / "training-and-monitoring-workloads.yaml"
+
+        dag_text = dag.read_text(encoding="utf-8")
+        workload_text = workloads.read_text(encoding="utf-8")
+
+        for expected in ["KubernetesPodOperator", "task_group", "BranchPythonOperator", "ShortCircuitOperator", "Asset", "expand("]:
+            self.assertIn(expected, dag_text)
+        for expected in ["CronJob", "RoleBinding", "ConfigMap", "securityContext", "ttlSecondsAfterFinished"]:
+            self.assertIn(expected, workload_text)
+
     def test_demo_promotes_champion_and_writes_dashboard(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
