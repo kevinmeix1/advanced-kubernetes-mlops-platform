@@ -225,6 +225,16 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual(plan["managed_service_mapping"]["serving"], "KServe Standard mode on EKS with Gateway API")
             self.assertTrue((root / "reports" / "cloud_migration_plan.json").exists())
 
+    def test_ci_workflow_uploads_artifacts_and_validates_outputs(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        workflow = (repo / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        makefile = (repo / "Makefile").read_text(encoding="utf-8")
+
+        for expected in ["actions/upload-artifact@v6", "GITHUB_STEP_SUMMARY", "make ci-verify", "concurrency"]:
+            self.assertIn(expected, workflow)
+        for expected in ["ci-verify:", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+            self.assertIn(expected, makefile)
+
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
