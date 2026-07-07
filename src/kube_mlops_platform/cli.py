@@ -12,6 +12,7 @@ from .gates import evaluate_gates
 from .io import read_csv, read_json, write_csv, write_json
 from .model import evaluate_model, train_model
 from .monitoring import build_monitoring_report
+from .network_security import build_network_security_report
 from .policy_audit import audit_platform_policy
 from .registry import champion_metadata, promote_candidate, register_candidate, rollback as rollback_model, log_mlflow_run
 from .resource_optimizer import build_resource_optimization_report
@@ -135,6 +136,7 @@ def demo(output: str | Path) -> dict:
     trace_report = build_trace_report(root)
     chaos_drill = run_chaos_drill(root)
     resource_optimization = build_resource_optimization_report(root)
+    network_security = build_network_security_report(root)
     return {
         "train": {"model_version": train_result["model"]["version"], "validation_passed": train_result["validation"]["passed"]},
         "evaluate": eval_result,
@@ -146,6 +148,7 @@ def demo(output: str | Path) -> dict:
         "trace_report": trace_report,
         "chaos_drill": chaos_drill,
         "resource_optimization": resource_optimization,
+        "network_security": network_security,
     }
 
 
@@ -166,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
         "trace-report",
         "chaos-drill",
         "optimize-resources",
+        "network-security",
     ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
@@ -198,4 +202,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(run_chaos_drill(args.output), indent=2, sort_keys=True))
     elif args.command == "optimize-resources":
         print(json.dumps(build_resource_optimization_report(args.output), indent=2, sort_keys=True))
+    elif args.command == "network-security":
+        print(json.dumps(build_network_security_report(args.output), indent=2, sort_keys=True))
     return 0

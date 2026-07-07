@@ -11,6 +11,7 @@ from kube_mlops_platform.data import generate_churn_dataset, split_rows
 from kube_mlops_platform.gates import evaluate_gates
 from kube_mlops_platform.io import read_csv, read_json, read_jsonl, write_json
 from kube_mlops_platform.model import predict_score, train_model
+from kube_mlops_platform.network_security import build_network_security_report
 from kube_mlops_platform.policy_audit import audit_platform_policy
 from kube_mlops_platform.registry import rollback
 from kube_mlops_platform.resource_optimizer import build_resource_optimization_report
@@ -123,6 +124,20 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("VPA in Off mode", report["guardrails"][0])
             self.assertTrue(any("prewarm_replicas" in item["actions"] for item in report["recommendations"]))
             self.assertTrue((Path(tmp) / "reports" / "resource_optimization.json").exists())
+
+    def test_network_security_topology_and_manifests_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        network_security = (repo / "kubernetes" / "network-security.yaml").read_text(encoding="utf-8")
+
+        for expected in ["kind: NetworkPolicy", "default-deny-all", "PeerAuthentication", "mode: STRICT", "AuthorizationPolicy"]:
+            self.assertIn(expected, network_security)
+        with tempfile.TemporaryDirectory() as tmp:
+            report = build_network_security_report(tmp)
+
+            self.assertEqual(report["mtls_mode"], "STRICT")
+            self.assertEqual(report["allowed_flow_count"], 3)
+            self.assertTrue(any(flow["destination"] == "mlflow-registry" for flow in report["allowed_flows"]))
+            self.assertTrue((Path(tmp) / "reports" / "network_security.json").exists())
 
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
