@@ -1,4 +1,4 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report minikube-up kubernetes-plan test clean
+.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill minikube-up kubernetes-plan test clean
 
 demo:
 	PYTHONPATH=src python3 -m kube_mlops_platform demo --output .local
@@ -33,6 +33,9 @@ policy-audit:
 trace-report:
 	PYTHONPATH=src python3 -m kube_mlops_platform trace-report --output .local
 
+chaos-drill:
+	PYTHONPATH=src python3 -m kube_mlops_platform chaos-drill --output .local
+
 minikube-up:
 	@echo "Start Minikube and install KServe, then apply manifests:"
 	@echo "  minikube start --cpus=4 --memory=8192"
@@ -40,6 +43,7 @@ minikube-up:
 	@echo "  kubectl apply -f kserve/production-hardening.yaml"
 	@echo "  kubectl apply -f kserve/inferenceservice.yaml"
 	@echo "  kubectl apply -f kubernetes/training-and-monitoring-workloads.yaml"
+	@echo "  kubectl apply -f kubernetes/chaos-experiments.yaml"
 	@echo "  kubectl apply -f monitoring/prometheus/prometheus.yml"
 
 kubernetes-plan:

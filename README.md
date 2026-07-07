@@ -100,6 +100,8 @@ For the policy-as-code audit layer, see [security and governance](docs/security-
 
 For OpenTelemetry-style runtime traces, see [observability and tracing](docs/observability-tracing.md).
 
+For controlled failure injection and recovery objectives, see [resilience and chaos drills](docs/resilience-chaos.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

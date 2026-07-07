@@ -1,0 +1,67 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: churn-risk-pod-kill
+  namespace: mlops
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces: ["mlops"]
+    labelSelectors:
+      app.kubernetes.io/name: kubernetes-mlops-platform
+  duration: "30s"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: mlflow-network-delay
+  namespace: mlops
+spec:
+  action: delay
+  mode: all
+  selector:
+    namespaces: ["mlops"]
+    labelSelectors:
+      app.kubernetes.io/component: retraining
+  delay:
+    latency: "400ms"
+    correlation: "25"
+    jitter: "50ms"
+  duration: "2m"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: release-queue-cpu-pressure
+  namespace: mlops
+spec:
+  mode: one
+  selector:
+    namespaces: ["mlops"]
+    labelSelectors:
+      app.kubernetes.io/component: admission-smoke
+  stressors:
+    cpu:
+      workers: 1
+      load: 60
+  duration: "2m"
+---
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: weekly-mlops-chaos-drill
+  namespace: mlops
+spec:
+  schedule: "0 8 * * 1"
+  type: PodChaos
+  historyLimit: 3
+  concurrencyPolicy: Forbid
+  podChaos:
+    action: pod-kill
+    mode: one
+    selector:
+      namespaces: ["mlops"]
+      labelSelectors:
+        app.kubernetes.io/name: kubernetes-mlops-platform
+    duration: "30s"

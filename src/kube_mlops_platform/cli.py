@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .chaos import run_chaos_drill
 from .control_plane import build_release_plan
 from .dashboard import render_dashboard
 from .data import generate_churn_dataset, split_rows
@@ -131,6 +132,7 @@ def demo(output: str | Path) -> dict:
     monitor_result = monitor(root)
     policy_audit = audit_platform_policy(Path.cwd(), output_root=root)
     trace_report = build_trace_report(root)
+    chaos_drill = run_chaos_drill(root)
     return {
         "train": {"model_version": train_result["model"]["version"], "validation_passed": train_result["validation"]["passed"]},
         "evaluate": eval_result,
@@ -140,13 +142,27 @@ def demo(output: str | Path) -> dict:
         "release_plan": monitor_result["release_plan"],
         "policy_audit": policy_audit,
         "trace_report": trace_report,
+        "chaos_drill": chaos_drill,
     }
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Kubernetes-native MLOps platform")
     sub = parser.add_subparsers(dest="command", required=True)
-    for command in ["demo", "train", "evaluate", "deploy", "predict", "monitor", "rollback", "health", "plan-release", "policy-audit", "trace-report"]:
+    for command in [
+        "demo",
+        "train",
+        "evaluate",
+        "deploy",
+        "predict",
+        "monitor",
+        "rollback",
+        "health",
+        "plan-release",
+        "policy-audit",
+        "trace-report",
+        "chaos-drill",
+    ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
         if command == "train":
@@ -174,4 +190,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(audit_platform_policy(Path.cwd(), output_root=args.output), indent=2, sort_keys=True))
     elif args.command == "trace-report":
         print(json.dumps(build_trace_report(args.output), indent=2, sort_keys=True))
+    elif args.command == "chaos-drill":
+        print(json.dumps(run_chaos_drill(args.output), indent=2, sort_keys=True))
     return 0
