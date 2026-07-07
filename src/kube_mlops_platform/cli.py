@@ -23,6 +23,7 @@ from .registry import champion_metadata, promote_candidate, register_candidate, 
 from .resource_optimizer import build_resource_optimization_report
 from .serving import deploy_local_kserve, health, predict
 from .slo import build_slo_report
+from .supply_chain import build_supply_chain_evidence
 from .traceability import build_trace_report
 from .validation import validate_dataset
 
@@ -168,6 +169,13 @@ def demo(output: str | Path) -> dict:
         description="Reviewer landing page for generated dashboard, governance evidence, SLOs, migration, and reliability artifacts.",
         dashboard="mlops_platform_dashboard.html",
     )
+    supply_chain = build_supply_chain_evidence(
+        root,
+        project="Kubernetes MLOps Platform",
+        artifact_name="kubernetes-mlops-demo-artifacts",
+        workflow="Kubernetes MLOps CI",
+        namespace="mlops",
+    )
     return {
         "train": {"model_version": train_result["model"]["version"], "validation_passed": train_result["validation"]["passed"]},
         "evaluate": eval_result,
@@ -186,6 +194,7 @@ def demo(output: str | Path) -> dict:
         "slo_error_budget": slo_error_budget,
         "cloud_migration": cloud_migration,
         "artifact_index": str(artifact_index),
+        "supply_chain": supply_chain,
     }
 
 
@@ -212,6 +221,7 @@ def main(argv: list[str] | None = None) -> int:
         "governance-bundle",
         "slo-report",
         "cloud-plan",
+        "supply-chain",
     ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
@@ -256,4 +266,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(slo_report(args.output), indent=2, sort_keys=True))
     elif args.command == "cloud-plan":
         print(json.dumps(build_cloud_migration_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "supply-chain":
+        print(json.dumps(build_supply_chain_evidence(args.output, project="Kubernetes MLOps Platform", artifact_name="kubernetes-mlops-demo-artifacts", workflow="Kubernetes MLOps CI", namespace="mlops"), indent=2, sort_keys=True))
     return 0

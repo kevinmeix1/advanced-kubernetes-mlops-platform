@@ -19,9 +19,12 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Executive Dashboard", dashboard, "HTML control-room view for model health, release state, and monitoring signals."),
         ("Governance Evidence", "governance_evidence_bundle.json", "Model card, data card, approval record, risk register, and reproducibility hashes."),
         ("SLO Error Budget", "slo_error_budget.json", "Availability, latency, and quality SLO burn-rate evidence for release decisions."),
+        ("Supply Chain Evidence", "supply_chain_evidence.json", "Artifact hashes, GitHub attestations, SLSA provenance, and Sigstore policy controls."),
         ("Cloud Migration Plan", "cloud_migration_plan.json", "AWS, Snowflake, and Databricks migration notes with cost and operational trade-offs."),
         ("Disaster Recovery Plan", "disaster_recovery_plan.json", "Backup, restore, failover, and replay plan aligned with Kubernetes recovery patterns."),
         ("Policy Audit", "policy_audit.json", "Security and platform policy checks for manifests, supply chain, and runtime posture."),
+        ("Traceability", "trace_report.json", "Model, data, deployment, and workload trace links for release investigation."),
+        ("GitOps Promotion", "gitops_plan.json", "Environment promotion plan with Argo CD, progressive delivery, and rollback controls."),
     ]
     card_html = "\n".join(
         f"""
