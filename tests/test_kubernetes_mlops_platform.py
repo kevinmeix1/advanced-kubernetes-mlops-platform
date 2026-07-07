@@ -232,8 +232,23 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
 
         for expected in ["actions/upload-artifact@v6", "GITHUB_STEP_SUMMARY", "make ci-verify", "concurrency"]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
+
+    def test_artifact_index_links_key_reports(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            index = (root / "reports" / "index.html").read_text(encoding="utf-8")
+
+            self.assertTrue(result["artifact_index"].endswith("index.html"))
+            for expected in [
+                "mlops_platform_dashboard.html",
+                "governance_evidence_bundle.json",
+                "slo_error_budget.json",
+                "cloud_migration_plan.json",
+            ]:
+                self.assertIn(expected, index)
 
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -265,6 +280,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue(result["evaluate"]["promotion"]["promoted"])
             self.assertEqual(health(root)["status"], "Ready")
             self.assertTrue((root / "reports" / "mlops_platform_dashboard.html").exists())
+            self.assertTrue((root / "reports" / "index.html").exists())
             self.assertGreaterEqual(len(read_jsonl(root / "logs" / "predictions.jsonl")), 15)
 
             monitoring = read_json(root / "reports" / "monitoring_report.json")

@@ -60,6 +60,7 @@ cloud-plan:
 ci-verify:
 	PYTHONPATH=src python3 -m compileall -q src tests
 	test -f .local/reports/mlops_platform_dashboard.html
+	test -f .local/reports/index.html
 	test -f .local/reports/governance_evidence_bundle.json
 	test -f .local/reports/slo_error_budget.json
 	test -f .local/reports/cloud_migration_plan.json

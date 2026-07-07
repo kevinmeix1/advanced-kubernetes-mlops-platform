@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .artifact_index import render_artifact_index
 from .chaos import run_chaos_drill
 from .cloud_migration import build_cloud_migration_plan
 from .control_plane import build_release_plan
@@ -161,6 +162,12 @@ def demo(output: str | Path) -> dict:
     governance_bundle = build_governance_bundle(root)
     slo_error_budget = build_slo_report(root)
     cloud_migration = build_cloud_migration_plan(root)
+    artifact_index = render_artifact_index(
+        root,
+        title="Kubernetes MLOps Platform",
+        description="Reviewer landing page for generated dashboard, governance evidence, SLOs, migration, and reliability artifacts.",
+        dashboard="mlops_platform_dashboard.html",
+    )
     return {
         "train": {"model_version": train_result["model"]["version"], "validation_passed": train_result["validation"]["passed"]},
         "evaluate": eval_result,
@@ -178,6 +185,7 @@ def demo(output: str | Path) -> dict:
         "governance_bundle": governance_bundle,
         "slo_error_budget": slo_error_budget,
         "cloud_migration": cloud_migration,
+        "artifact_index": str(artifact_index),
     }
 
 
