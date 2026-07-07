@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .chaos import run_chaos_drill
+from .cloud_migration import build_cloud_migration_plan
 from .control_plane import build_release_plan
 from .dashboard import render_dashboard
 from .data import generate_churn_dataset, split_rows
@@ -159,6 +160,7 @@ def demo(output: str | Path) -> dict:
     disaster_recovery = build_disaster_recovery_plan(root)
     governance_bundle = build_governance_bundle(root)
     slo_error_budget = build_slo_report(root)
+    cloud_migration = build_cloud_migration_plan(root)
     return {
         "train": {"model_version": train_result["model"]["version"], "validation_passed": train_result["validation"]["passed"]},
         "evaluate": eval_result,
@@ -175,6 +177,7 @@ def demo(output: str | Path) -> dict:
         "disaster_recovery": disaster_recovery,
         "governance_bundle": governance_bundle,
         "slo_error_budget": slo_error_budget,
+        "cloud_migration": cloud_migration,
     }
 
 
@@ -200,6 +203,7 @@ def main(argv: list[str] | None = None) -> int:
         "dr-plan",
         "governance-bundle",
         "slo-report",
+        "cloud-plan",
     ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
@@ -242,4 +246,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(governance(args.output), indent=2, sort_keys=True))
     elif args.command == "slo-report":
         print(json.dumps(slo_report(args.output), indent=2, sort_keys=True))
+    elif args.command == "cloud-plan":
+        print(json.dumps(build_cloud_migration_plan(args.output), indent=2, sort_keys=True))
     return 0

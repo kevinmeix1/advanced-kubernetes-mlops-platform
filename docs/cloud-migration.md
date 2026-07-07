@@ -1,14 +1,23 @@
 # Cloud Migration Plan
 
+Generate the machine-readable migration plan with:
+
+```bash
+make cloud-plan
+```
+
+This repo now includes an AWS Terraform skeleton under `infra/terraform/aws` and Karpenter/EKS node-pool guidance in `kubernetes/cloud-nodepools.yaml`.
+
 ## AWS
 
 - Store datasets and model artifacts in S3.
-- Run Airflow on MWAA or self-managed EKS.
+- Run Airflow on MWAA or the official Airflow Helm chart on EKS.
 - Run training on Metaflow with AWS Batch or Kubernetes.
 - Use MLflow Tracking with RDS backend and S3 artifact store.
 - Deploy KServe on EKS with IRSA access to model artifacts.
 - Send prediction logs to CloudWatch, Firehose, or S3.
 - Scrape metrics with Amazon Managed Prometheus and Grafana.
+- Prefer EKS Auto Mode or Karpenter NodePools for pod-driven scaling and workload-specific capacity.
 
 ## Databricks
 
@@ -34,4 +43,3 @@
 - Add canary rollout automation and rollback policy.
 - Add alert routing to PagerDuty, Slack, or email.
 - Add model card and approval workflow for high-risk domains.
-

@@ -114,6 +114,8 @@ For model cards, data cards, risk records, approval evidence, and reproducibilit
 
 For multi-window burn alerts, error-budget reports, and release-freeze automation, see [SLO and error budget automation](docs/slo-error-budget.md).
 
+For EKS Auto Mode, Terraform, managed-service mappings, and portability notes, see [cloud migration](docs/cloud-migration.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

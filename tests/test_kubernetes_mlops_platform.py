@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from kube_mlops_platform.chaos import run_chaos_drill
+from kube_mlops_platform.cloud_migration import build_cloud_migration_plan
 from kube_mlops_platform.cli import demo, train
 from kube_mlops_platform.control_plane import build_release_plan, evaluate_release_policy
 from kube_mlops_platform.data import generate_churn_dataset, split_rows
@@ -205,6 +206,24 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual(report["slos"][0]["name"], "online_inference_availability")
             self.assertTrue(any(item["name"] == "feature_drift_clean_window" for item in report["slos"]))
             self.assertTrue((root / "reports" / "slo_error_budget.json").exists())
+
+    def test_cloud_migration_plan_and_infra_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        nodepools = (repo / "kubernetes" / "cloud-nodepools.yaml").read_text(encoding="utf-8")
+        terraform = (repo / "infra" / "terraform" / "aws" / "main.tf").read_text(encoding="utf-8")
+
+        for expected in ["NodePool", "EC2NodeClass", "WhenEmptyOrUnderutilized"]:
+            self.assertIn(expected, nodepools)
+        for expected in ["cluster_compute_config", "node_pools", "aws_s3_bucket"]:
+            self.assertIn(expected, terraform)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            plan = build_cloud_migration_plan(root)
+
+            self.assertEqual(result["cloud_migration"]["primary_target"], "AWS EKS Auto Mode")
+            self.assertEqual(plan["managed_service_mapping"]["serving"], "KServe Standard mode on EKS with Gateway API")
+            self.assertTrue((root / "reports" / "cloud_migration_plan.json").exists())
 
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
