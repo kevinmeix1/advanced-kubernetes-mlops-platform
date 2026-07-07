@@ -102,6 +102,8 @@ For OpenTelemetry-style runtime traces, see [observability and tracing](docs/obs
 
 For controlled failure injection and recovery objectives, see [resilience and chaos drills](docs/resilience-chaos.md).
 
+For workload right-sizing, HPA/VPA guardrails, and Airflow pool sizing, see [resource optimization](docs/resource-optimization.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

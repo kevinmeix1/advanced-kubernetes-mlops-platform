@@ -13,6 +13,7 @@ from kube_mlops_platform.io import read_csv, read_json, read_jsonl, write_json
 from kube_mlops_platform.model import predict_score, train_model
 from kube_mlops_platform.policy_audit import audit_platform_policy
 from kube_mlops_platform.registry import rollback
+from kube_mlops_platform.resource_optimizer import build_resource_optimization_report
 from kube_mlops_platform.serving import health
 from kube_mlops_platform.traceability import build_trace_report
 from kube_mlops_platform.validation import validate_dataset
@@ -108,6 +109,20 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual(report["scenario_count"], 3)
             self.assertTrue(any(scenario["fault"] == "NetworkChaos" for scenario in report["scenarios"]))
             self.assertTrue((Path(tmp) / "reports" / "chaos_drill_report.json").exists())
+
+    def test_resource_optimization_and_autoscaling_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        optimization = (repo / "kubernetes" / "resource-optimization.yaml").read_text(encoding="utf-8")
+
+        for expected in ["VerticalPodAutoscaler", "HorizontalPodAutoscaler", "PrometheusRule", "airflow-capacity-pools", "stabilizationWindowSeconds: 300"]:
+            self.assertIn(expected, optimization)
+        with tempfile.TemporaryDirectory() as tmp:
+            report = build_resource_optimization_report(tmp)
+
+            self.assertEqual(report["summary"]["workload_count"], 3)
+            self.assertIn("VPA in Off mode", report["guardrails"][0])
+            self.assertTrue(any("prewarm_replicas" in item["actions"] for item in report["recommendations"]))
+            self.assertTrue((Path(tmp) / "reports" / "resource_optimization.json").exists())
 
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
