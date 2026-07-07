@@ -1,0 +1,13 @@
+.DS_Store
+.local/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.db
+*.sqlite
+*.duckdb
+*.parquet
+.env

@@ -1,0 +1,32 @@
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: churn-risk-predictor
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: inference
+    mlops.dev/model: churn-risk
+    mlops.dev/stage: champion
+  annotations:
+    autoscaling.knative.dev/min-scale: "1"
+    autoscaling.knative.dev/max-scale: "5"
+    autoscaling.knative.dev/target: "8"
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8080"
+spec:
+  predictor:
+    serviceAccountName: churn-risk-predictor
+    model:
+      modelFormat:
+        name: sklearn
+      protocolVersion: v2
+      storageUri: pvc://mlflow-models/churn-risk/champion
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          cpu: "1"
+          memory: "1Gi"

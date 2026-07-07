@@ -1,0 +1,57 @@
+contract_name: churn_training_data
+owner: ml-platform
+version: 1
+description: Training and scoring contract for the churn risk model.
+primary_key: customer_id
+target: churned
+columns:
+  customer_id:
+    type: string
+    required: true
+    unique: true
+  segment:
+    type: string
+    required: true
+    allowed_values:
+      - enterprise
+      - self_serve
+  tenure_months:
+    type: integer
+    required: true
+    min: 1
+  monthly_spend:
+    type: float
+    required: true
+    min: 0
+  support_tickets:
+    type: integer
+    required: true
+    min: 0
+  late_payments:
+    type: integer
+    required: true
+    min: 0
+  usage_drop_pct:
+    type: float
+    required: true
+    min: 0
+    max: 1
+  churned:
+    type: integer
+    required: true
+    allowed_values:
+      - 0
+      - 1
+quality_gates:
+  row_count_minimum: 500
+  target_positive_rate_minimum: 0.05
+  target_positive_rate_maximum: 0.8
+serving_requirements:
+  online_required_features:
+    - segment
+    - tenure_months
+    - monthly_spend
+    - support_tickets
+    - late_payments
+    - usage_drop_pct
+  p95_latency_ms: 50
