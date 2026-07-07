@@ -5,9 +5,10 @@ import unittest
 from pathlib import Path
 
 from kube_mlops_platform.cli import demo, train
+from kube_mlops_platform.control_plane import build_release_plan, evaluate_release_policy
 from kube_mlops_platform.data import generate_churn_dataset, split_rows
 from kube_mlops_platform.gates import evaluate_gates
-from kube_mlops_platform.io import read_csv, read_json, read_jsonl
+from kube_mlops_platform.io import read_csv, read_json, read_jsonl, write_json
 from kube_mlops_platform.model import predict_score, train_model
 from kube_mlops_platform.registry import rollback
 from kube_mlops_platform.serving import health
@@ -55,6 +56,34 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             "kueue.x-k8s.io/queue-name",
         ]:
             self.assertIn(expected, admission)
+
+    def test_event_driven_autoscaling_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        autoscaling = (repo / "kubernetes" / "event-driven-autoscaling.yaml").read_text(encoding="utf-8")
+
+        for expected in ["ScaledObject", "prometheus", "fallback", "horizontalPodAutoscalerConfig", "activationThreshold"]:
+            self.assertIn(expected, autoscaling)
+
+    def test_release_control_plane_advances_and_rolls_back(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_json(root / "reports" / "gate_report.json", {"passed": True})
+            write_json(
+                root / "reports" / "monitoring_report.json",
+                {"latency_ms": {"p95": 18.0}, "error_rate": 0.0, "feature_drift": {"passed": True}},
+            )
+
+            plan = build_release_plan(root, queued_jobs=1, available_slots=8)
+            rollback_policy = evaluate_release_policy(
+                {"passed": True},
+                {"latency_ms": {"p95": 18.0}, "error_rate": 0.06, "feature_drift": {"passed": True}},
+                {"queued_jobs": 1, "available_slots": 8},
+            )
+
+            self.assertEqual(plan["recommended_action"], "advance_canary")
+            self.assertEqual(plan["stages"][1]["system"], "kueue")
+            self.assertTrue((root / "reports" / "release_control_plan.json").exists())
+            self.assertEqual(rollback_policy["action"], "rollback")
 
     def test_demo_promotes_champion_and_writes_dashboard(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

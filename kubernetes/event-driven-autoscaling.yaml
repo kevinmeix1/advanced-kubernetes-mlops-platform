@@ -1,0 +1,41 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: churn-risk-prometheus-scaler
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: event-driven-autoscaling
+spec:
+  scaleTargetRef:
+    name: churn-risk-predictor
+  pollingInterval: 15
+  cooldownPeriod: 120
+  minReplicaCount: 2
+  maxReplicaCount: 12
+  fallback:
+    failureThreshold: 3
+    replicas: 4
+  advanced:
+    horizontalPodAutoscalerConfig:
+      name: churn-risk-keda-hpa
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 30
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 60
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+            - type: Percent
+              value: 25
+              periodSeconds: 60
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc.cluster.local:9090
+        query: sum(rate(kserve_request_total{inferenceservice="churn-risk-predictor"}[2m]))
+        threshold: "80"
+        activationThreshold: "10"

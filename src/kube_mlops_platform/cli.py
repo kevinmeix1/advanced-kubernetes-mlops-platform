@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .control_plane import build_release_plan
 from .dashboard import render_dashboard
 from .data import generate_churn_dataset, split_rows
 from .gates import evaluate_gates
@@ -102,6 +103,7 @@ def monitor(output: str | Path) -> dict:
         predict_once(root)
     generate_churn_dataset(root / "data" / "current_scoring.csv", rows=240, seed=99, drift=True)
     report = build_monitoring_report(root)
+    release_plan = build_release_plan(root)
     dashboard = render_dashboard(
         root / "reports" / "mlops_platform_dashboard.html",
         validation_report=read_json(root / "reports" / "data_validation.json"),
@@ -109,8 +111,9 @@ def monitor(output: str | Path) -> dict:
         deployment_state=read_json(root / "deployments" / "kserve_state.json"),
         monitoring_report=report,
         registry_metadata=champion_metadata(root),
+        release_plan=release_plan,
     )
-    return {"monitoring": report, "dashboard": str(dashboard)}
+    return {"monitoring": report, "release_plan": release_plan, "dashboard": str(dashboard)}
 
 
 def rollback(output: str | Path) -> dict:
@@ -130,13 +133,14 @@ def demo(output: str | Path) -> dict:
         "deploy": deploy_result,
         "predictions": predictions,
         "monitor": monitor_result,
+        "release_plan": monitor_result["release_plan"],
     }
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Kubernetes-native MLOps platform")
     sub = parser.add_subparsers(dest="command", required=True)
-    for command in ["demo", "train", "evaluate", "deploy", "predict", "monitor", "rollback", "health"]:
+    for command in ["demo", "train", "evaluate", "deploy", "predict", "monitor", "rollback", "health", "plan-release"]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
         if command == "train":
@@ -158,4 +162,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(rollback(args.output), indent=2, sort_keys=True))
     elif args.command == "health":
         print(json.dumps(health(args.output), indent=2, sort_keys=True))
+    elif args.command == "plan-release":
+        print(json.dumps(build_release_plan(args.output), indent=2, sort_keys=True))
     return 0

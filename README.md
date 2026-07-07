@@ -94,6 +94,8 @@ For the latest heavyweight orchestration pass, see [advanced orchestration asses
 
 For the Kubernetes/Airflow robustness layer, see [Kubernetes and Airflow robustness](docs/kubernetes-airflow-robustness.md).
 
+For the operator-facing release planner, see [advanced control plane layer](docs/control-plane-depth.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

@@ -64,7 +64,11 @@ def render_dashboard(
     deployment_state: dict,
     monitoring_report: dict,
     registry_metadata: dict,
+    release_plan: dict | None = None,
 ) -> Path:
+    release_plan = release_plan or {}
+    release_policy = release_plan.get("policy", {})
+    queue_state = release_plan.get("queue_state", {})
     gate_rows = [
         {
             "gate": pretty(check.get("name")),
@@ -203,6 +207,16 @@ def render_dashboard(
             <div class="panel">
               <h2>Feature Drift</h2>
               <div class="table-wrap"><table><tr><th>Feature</th><th>Delta</th><th>Status</th></tr>{rows(drift_rows, ['feature', 'delta', 'flagged'])}</table></div>
+            </div>
+
+            <div class="panel">
+              <h2>Release Control Plane</h2>
+              <div class="summary-grid">
+                <div class="summary-item"><span>Recommended action</span><strong>{esc(release_plan.get('recommended_action', 'not planned'))}</strong></div>
+                <div class="summary-item"><span>Error budget burn</span><strong>{esc(release_policy.get('error_budget_burn_rate', 'n/a'))}</strong></div>
+                <div class="summary-item"><span>Queue pressure</span><strong>{esc(release_policy.get('queue_pressure', 'n/a'))}</strong></div>
+                <div class="summary-item"><span>Kueue queue</span><strong>{esc(queue_state.get('queue', 'n/a'))}</strong></div>
+              </div>
             </div>
 
             <div class="panel">
