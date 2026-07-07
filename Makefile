@@ -1,4 +1,4 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit minikube-up kubernetes-plan test clean
+.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report minikube-up kubernetes-plan test clean
 
 demo:
 	PYTHONPATH=src python3 -m kube_mlops_platform demo --output .local
@@ -29,6 +29,9 @@ plan-release:
 
 policy-audit:
 	PYTHONPATH=src python3 -m kube_mlops_platform policy-audit --output .local
+
+trace-report:
+	PYTHONPATH=src python3 -m kube_mlops_platform trace-report --output .local
 
 minikube-up:
 	@echo "Start Minikube and install KServe, then apply manifests:"

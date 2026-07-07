@@ -14,6 +14,7 @@ from .monitoring import build_monitoring_report
 from .policy_audit import audit_platform_policy
 from .registry import champion_metadata, promote_candidate, register_candidate, rollback as rollback_model, log_mlflow_run
 from .serving import deploy_local_kserve, health, predict
+from .traceability import build_trace_report
 from .validation import validate_dataset
 
 
@@ -129,6 +130,7 @@ def demo(output: str | Path) -> dict:
     predictions = [predict(root, {**sample_payload(), "customer_id": f"cust_live_{idx:03d}", "usage_drop_pct": 0.2 + idx * 0.035}) for idx in range(1, 16)]
     monitor_result = monitor(root)
     policy_audit = audit_platform_policy(Path.cwd(), output_root=root)
+    trace_report = build_trace_report(root)
     return {
         "train": {"model_version": train_result["model"]["version"], "validation_passed": train_result["validation"]["passed"]},
         "evaluate": eval_result,
@@ -137,13 +139,14 @@ def demo(output: str | Path) -> dict:
         "monitor": monitor_result,
         "release_plan": monitor_result["release_plan"],
         "policy_audit": policy_audit,
+        "trace_report": trace_report,
     }
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Kubernetes-native MLOps platform")
     sub = parser.add_subparsers(dest="command", required=True)
-    for command in ["demo", "train", "evaluate", "deploy", "predict", "monitor", "rollback", "health", "plan-release", "policy-audit"]:
+    for command in ["demo", "train", "evaluate", "deploy", "predict", "monitor", "rollback", "health", "plan-release", "policy-audit", "trace-report"]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
         if command == "train":
@@ -169,4 +172,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_release_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "policy-audit":
         print(json.dumps(audit_platform_policy(Path.cwd(), output_root=args.output), indent=2, sort_keys=True))
+    elif args.command == "trace-report":
+        print(json.dumps(build_trace_report(args.output), indent=2, sort_keys=True))
     return 0

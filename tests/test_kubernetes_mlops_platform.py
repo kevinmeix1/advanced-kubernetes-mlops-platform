@@ -13,6 +13,7 @@ from kube_mlops_platform.model import predict_score, train_model
 from kube_mlops_platform.policy_audit import audit_platform_policy
 from kube_mlops_platform.registry import rollback
 from kube_mlops_platform.serving import health
+from kube_mlops_platform.traceability import build_trace_report
 from kube_mlops_platform.validation import validate_dataset
 
 
@@ -79,6 +80,19 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("no_latest_image_tags", report["failed_checks"])
             self.assertIn("immutable_image_digest", report["failed_checks"])
             self.assertTrue((Path(tmp) / "reports" / "policy_audit.json").exists())
+
+    def test_trace_report_and_otel_collector_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        collector = (repo / "kubernetes" / "opentelemetry-collector.yaml").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            trace = build_trace_report(tmp)
+
+            self.assertEqual(trace["span_count"], 5)
+            self.assertEqual(trace["root_service"], "airflow")
+            self.assertTrue(any(span["service"] == "kserve" for span in trace["spans"]))
+            self.assertTrue((Path(tmp) / "reports" / "trace_report.json").exists())
+        for expected in ["kind: ConfigMap", "otlp", "k8sattributes", "memory_limiter", "prometheus", "batch"]:
+            self.assertIn(expected, collector)
 
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

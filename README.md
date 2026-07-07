@@ -98,6 +98,8 @@ For the operator-facing release planner, see [advanced control plane layer](docs
 
 For the policy-as-code audit layer, see [security and governance](docs/security-governance.md).
 
+For OpenTelemetry-style runtime traces, see [observability and tracing](docs/observability-tracing.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:
