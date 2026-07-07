@@ -36,6 +36,14 @@ def pod_task(task_id: str, command: list[str], *, pool: str = "ml_platform_pool"
         get_logs=True,
         is_delete_operator_pod=True,
         in_cluster=True,
+        deferrable=True,
+        logging_interval=30,
+        reattach_on_restart=True,
+        on_finish_action="delete_pod",
+        on_kill_action="delete_pod",
+        startup_timeout_seconds=300,
+        execution_timeout=timedelta(hours=2),
+        pod_template_file="/opt/airflow/dags/repo/kubernetes/airflow-kubernetes-executor-pod-template.yaml",
         pool=pool,
         priority_weight=priority_weight,
         retries=2,
@@ -127,6 +135,34 @@ if AIRFLOW_AVAILABLE:
             aggregate_metrics >> fairness_slice_gate >> register_candidate
             return register_candidate
 
+        @task_group(group_id="capacity_and_slo_governance")
+        def capacity_and_slo_group():
+            reserve_release_quota = pod_task(
+                "reserve_kueue_release_quota",
+                ["kubectl", "get", "localqueue", "churn-release-queue", "-n", "mlops"],
+                priority_weight=4,
+            )
+            verify_serving_budget = pod_task(
+                "verify_serving_latency_budget",
+                ["python", "-m", "kube_mlops_platform", "monitor"],
+                priority_weight=4,
+            )
+            wait_for_kserve_readiness = pod_task(
+                "wait_for_kserve_readiness_deferrable",
+                [
+                    "kubectl",
+                    "wait",
+                    "--for=condition=Ready",
+                    "inferenceservice/churn-risk-predictor",
+                    "-n",
+                    "mlops",
+                    "--timeout=10m",
+                ],
+                priority_weight=5,
+            )
+            reserve_release_quota >> verify_serving_budget >> wait_for_kserve_readiness
+            return wait_for_kserve_readiness
+
         @task
         def decide_release_strategy() -> str:
             return "deploy_canary"
@@ -153,8 +189,9 @@ if AIRFLOW_AVAILABLE:
         quality = data_quality_group()
         trained = segment_training_group(segments)
         registry = evaluation_and_registry_group(trained)
+        capacity = capacity_and_slo_group()
         suites = list_quality_suites()
-        start >> manifest >> [quality, suites] >> trained >> registry >> branch
+        start >> manifest >> [quality, suites] >> trained >> registry >> capacity >> branch
         branch >> deploy_canary >> run_shadow_checks >> can_publish >> promote_champion >> end
         branch >> rollback >> publish_lineage >> end
         promote_champion >> publish_lineage

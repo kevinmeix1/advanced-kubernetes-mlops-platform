@@ -25,7 +25,9 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
 
         for expected in ["KubernetesPodOperator", "task_group", "BranchPythonOperator", "ShortCircuitOperator", "Asset", "expand("]:
             self.assertIn(expected, dag_text)
-        for expected in ["CronJob", "RoleBinding", "ConfigMap", "securityContext", "ttlSecondsAfterFinished"]:
+        for expected in ["deferrable=True", "pod_template_file", "capacity_and_slo_governance", "reserve_kueue_release_quota"]:
+            self.assertIn(expected, dag_text)
+        for expected in ["CronJob", "RoleBinding", "ConfigMap", "securityContext", "ttlSecondsAfterFinished", "kueue.x-k8s.io/queue-name"]:
             self.assertIn(expected, workload_text)
 
     def test_kubernetes_governance_and_airflow_pod_template_exist(self) -> None:
@@ -37,6 +39,22 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn(expected, governance)
         for expected in ["initContainers", "startupProbe", "livenessProbe", "readinessProbe", "topologySpreadConstraints"]:
             self.assertIn(expected, pod_template)
+
+    def test_kueue_admission_control_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        admission = (repo / "kubernetes" / "kueue-admission-control.yaml").read_text(encoding="utf-8")
+
+        for expected in [
+            "ResourceFlavor",
+            "ClusterQueue",
+            "LocalQueue",
+            "WorkloadPriorityClass",
+            "churn-release-queue",
+            "borrowingLimit",
+            "preemption",
+            "kueue.x-k8s.io/queue-name",
+        ]:
+            self.assertIn(expected, admission)
 
     def test_demo_promotes_champion_and_writes_dashboard(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

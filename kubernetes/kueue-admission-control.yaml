@@ -1,0 +1,79 @@
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: mlops-cpu
+spec:
+  nodeLabels:
+    workload-class: mlops
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: WorkloadPriorityClass
+metadata:
+  name: release-critical
+value: 100000
+description: "Gated model release, rollback, and production recovery jobs."
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: churn-release-cluster-queue
+spec:
+  namespaceSelector: {}
+  queueingStrategy: BestEffortFIFO
+  resourceGroups:
+    - coveredResources: ["cpu", "memory", "pods"]
+      flavors:
+        - name: mlops-cpu
+          resources:
+            - name: cpu
+              nominalQuota: "8"
+              borrowingLimit: "4"
+            - name: memory
+              nominalQuota: 24Gi
+              borrowingLimit: 8Gi
+            - name: pods
+              nominalQuota: "30"
+  preemption:
+    reclaimWithinCohort: Any
+    withinClusterQueue: LowerPriority
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: churn-release-queue
+  namespace: mlops
+spec:
+  clusterQueue: churn-release-cluster-queue
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: churn-release-admission-smoke
+  namespace: mlops
+  labels:
+    kueue.x-k8s.io/queue-name: churn-release-queue
+    kueue.x-k8s.io/priority-class: release-critical
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: admission-smoke
+spec:
+  parallelism: 2
+  completions: 2
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      priorityClassName: mlops-release-critical
+      restartPolicy: Never
+      containers:
+        - name: admission-smoke
+          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:latest
+          command: ["bash", "-lc"]
+          args:
+            - "python -m kube_mlops_platform health"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"

@@ -53,6 +53,10 @@ spec:
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 5
   jobTemplate:
+    metadata:
+      labels:
+        kueue.x-k8s.io/queue-name: churn-release-queue
+        kueue.x-k8s.io/priority-class: release-critical
     spec:
       backoffLimit: 2
       ttlSecondsAfterFinished: 86400
@@ -96,6 +100,9 @@ kind: Job
 metadata:
   name: churn-backfill-example
   namespace: mlops
+  labels:
+    kueue.x-k8s.io/queue-name: churn-release-queue
+    kueue.x-k8s.io/priority-class: release-critical
 spec:
   backoffLimit: 1
   ttlSecondsAfterFinished: 86400
