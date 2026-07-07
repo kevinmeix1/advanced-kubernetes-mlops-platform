@@ -1,0 +1,127 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: mlops-platforms
+  namespace: argocd
+spec:
+  description: Advanced MLOps portfolio platforms
+  destinations:
+    - namespace: mlops
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://github.com/kevinmeix1/advanced-kubernetes-mlops-platform.git
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: advanced-kubernetes-mlops-platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: mlops-platforms
+  source:
+    repoURL: https://github.com/kevinmeix1/advanced-kubernetes-mlops-platform.git
+    targetRevision: main
+    path: kubernetes
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mlops
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - PruneLast=true
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlops-pre-sync-gates
+  namespace: mlops
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: release-gates
+          image: python:3.12-slim
+          command: ["python", "-c", "print('validate policy audit, model gates, and network topology before sync')"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: churn-risk-canary-analysis
+  namespace: mlops
+spec:
+  metrics:
+    - name: p95-latency
+      interval: 2m
+      count: 3
+      successCondition: result[0] < 75
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc.cluster.local:9090
+          query: histogram_quantile(0.95, sum(rate(kserve_request_duration_seconds_bucket{service="churn-risk"}[5m])) by (le))
+    - name: error-rate
+      interval: 2m
+      count: 3
+      successCondition: result[0] < 0.01
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc.cluster.local:9090
+          query: sum(rate(kserve_request_total{service="churn-risk",code=~"5.."}[5m])) / sum(rate(kserve_request_total{service="churn-risk"}[5m]))
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: churn-risk-predictor
+  namespace: mlops
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 4
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: churn-risk-predictor
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: churn-risk-predictor
+    spec:
+      containers:
+        - name: predictor
+          image: ghcr.io/kevinmeix1/churn-risk-predictor:2026.07.0
+          ports:
+            - containerPort: 8080
+  strategy:
+    canary:
+      steps:
+        - setWeight: 10
+        - pause:
+            duration: 5m
+        - analysis:
+            templates:
+              - templateName: churn-risk-canary-analysis
+        - setWeight: 50
+        - pause:
+            duration: 10m
+        - setWeight: 100

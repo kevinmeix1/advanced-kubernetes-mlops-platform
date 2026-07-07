@@ -9,6 +9,7 @@ from .control_plane import build_release_plan
 from .dashboard import render_dashboard
 from .data import generate_churn_dataset, split_rows
 from .gates import evaluate_gates
+from .gitops_release import build_gitops_plan
 from .io import read_csv, read_json, write_csv, write_json
 from .model import evaluate_model, train_model
 from .monitoring import build_monitoring_report
@@ -137,6 +138,7 @@ def demo(output: str | Path) -> dict:
     chaos_drill = run_chaos_drill(root)
     resource_optimization = build_resource_optimization_report(root)
     network_security = build_network_security_report(root)
+    gitops_plan = build_gitops_plan(root)
     return {
         "train": {"model_version": train_result["model"]["version"], "validation_passed": train_result["validation"]["passed"]},
         "evaluate": eval_result,
@@ -149,6 +151,7 @@ def demo(output: str | Path) -> dict:
         "chaos_drill": chaos_drill,
         "resource_optimization": resource_optimization,
         "network_security": network_security,
+        "gitops_plan": gitops_plan,
     }
 
 
@@ -170,6 +173,7 @@ def main(argv: list[str] | None = None) -> int:
         "chaos-drill",
         "optimize-resources",
         "network-security",
+        "gitops-plan",
     ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
@@ -204,4 +208,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_resource_optimization_report(args.output), indent=2, sort_keys=True))
     elif args.command == "network-security":
         print(json.dumps(build_network_security_report(args.output), indent=2, sort_keys=True))
+    elif args.command == "gitops-plan":
+        print(json.dumps(build_gitops_plan(args.output), indent=2, sort_keys=True))
     return 0

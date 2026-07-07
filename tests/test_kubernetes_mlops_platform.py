@@ -9,6 +9,7 @@ from kube_mlops_platform.cli import demo, train
 from kube_mlops_platform.control_plane import build_release_plan, evaluate_release_policy
 from kube_mlops_platform.data import generate_churn_dataset, split_rows
 from kube_mlops_platform.gates import evaluate_gates
+from kube_mlops_platform.gitops_release import build_gitops_plan
 from kube_mlops_platform.io import read_csv, read_json, read_jsonl, write_json
 from kube_mlops_platform.model import predict_score, train_model
 from kube_mlops_platform.network_security import build_network_security_report
@@ -138,6 +139,20 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual(report["allowed_flow_count"], 3)
             self.assertTrue(any(flow["destination"] == "mlflow-registry" for flow in report["allowed_flows"]))
             self.assertTrue((Path(tmp) / "reports" / "network_security.json").exists())
+
+    def test_gitops_plan_and_progressive_delivery_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        gitops = (repo / "gitops" / "gitops-promotion.yaml").read_text(encoding="utf-8")
+
+        for expected in ["kind: Application", "kind: AppProject", "AnalysisTemplate", "Rollout", "argocd.argoproj.io/sync-wave"]:
+            self.assertIn(expected, gitops)
+        with tempfile.TemporaryDirectory() as tmp:
+            plan = build_gitops_plan(tmp)
+
+            self.assertEqual(plan["deployment_controller"], "Argo CD")
+            self.assertEqual(plan["sync_waves"][0]["wave"], -3)
+            self.assertTrue(any(stage["environment"] == "prod" and stage["sync"] == "manual" for stage in plan["promotion_stages"]))
+            self.assertTrue((Path(tmp) / "reports" / "gitops_plan.json").exists())
 
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
