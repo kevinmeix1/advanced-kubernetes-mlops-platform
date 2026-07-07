@@ -92,6 +92,8 @@ See [production-grade refinements](docs/production-grade-refinements.md) for the
 
 For the latest heavyweight orchestration pass, see [advanced orchestration assessment](docs/advanced-orchestration-assessment.md).
 
+For the Kubernetes/Airflow robustness layer, see [Kubernetes and Airflow robustness](docs/kubernetes-airflow-robustness.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

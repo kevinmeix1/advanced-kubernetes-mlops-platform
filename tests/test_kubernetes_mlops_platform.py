@@ -28,6 +28,16 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["CronJob", "RoleBinding", "ConfigMap", "securityContext", "ttlSecondsAfterFinished"]:
             self.assertIn(expected, workload_text)
 
+    def test_kubernetes_governance_and_airflow_pod_template_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        governance = (repo / "kubernetes" / "platform-governance.yaml").read_text(encoding="utf-8")
+        pod_template = (repo / "kubernetes" / "airflow-kubernetes-executor-pod-template.yaml").read_text(encoding="utf-8")
+
+        for expected in ["ResourceQuota", "LimitRange", "PriorityClass", "HTTPRoute"]:
+            self.assertIn(expected, governance)
+        for expected in ["initContainers", "startupProbe", "livenessProbe", "readinessProbe", "topologySpreadConstraints"]:
+            self.assertIn(expected, pod_template)
+
     def test_demo_promotes_champion_and_writes_dashboard(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
