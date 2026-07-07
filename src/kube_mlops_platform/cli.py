@@ -18,6 +18,7 @@ from .io import read_csv, read_json, write_csv, write_json
 from .model import evaluate_model, train_model
 from .monitoring import build_monitoring_report
 from .network_security import build_network_security_report
+from .orchestration_scorecard import build_orchestration_scorecard
 from .policy_audit import audit_platform_policy
 from .registry import champion_metadata, promote_candidate, register_candidate, rollback as rollback_model, log_mlflow_run
 from .resource_optimizer import build_resource_optimization_report
@@ -169,6 +170,7 @@ def demo(output: str | Path) -> dict:
         description="Reviewer landing page for generated dashboard, governance evidence, SLOs, migration, and reliability artifacts.",
         dashboard="mlops_platform_dashboard.html",
     )
+    orchestration_scorecard = build_orchestration_scorecard(root, project="Kubernetes MLOps Platform")
     supply_chain = build_supply_chain_evidence(
         root,
         project="Kubernetes MLOps Platform",
@@ -194,6 +196,7 @@ def demo(output: str | Path) -> dict:
         "slo_error_budget": slo_error_budget,
         "cloud_migration": cloud_migration,
         "artifact_index": str(artifact_index),
+        "orchestration_scorecard": orchestration_scorecard,
         "supply_chain": supply_chain,
     }
 
@@ -222,6 +225,7 @@ def main(argv: list[str] | None = None) -> int:
         "slo-report",
         "cloud-plan",
         "supply-chain",
+        "orchestration-scorecard",
     ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
@@ -268,4 +272,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_cloud_migration_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "supply-chain":
         print(json.dumps(build_supply_chain_evidence(args.output, project="Kubernetes MLOps Platform", artifact_name="kubernetes-mlops-demo-artifacts", workflow="Kubernetes MLOps CI", namespace="mlops"), indent=2, sort_keys=True))
+    elif args.command == "orchestration-scorecard":
+        print(json.dumps(build_orchestration_scorecard(args.output, project="Kubernetes MLOps Platform"), indent=2, sort_keys=True))
     return 0

@@ -1,4 +1,4 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain ci-verify minikube-up kubernetes-plan test clean
+.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard ci-verify minikube-up kubernetes-plan test clean
 
 demo:
 	PYTHONPATH=src python3 -m kube_mlops_platform demo --output .local
@@ -60,6 +60,9 @@ cloud-plan:
 supply-chain:
 	PYTHONPATH=src python3 -m kube_mlops_platform supply-chain --output .local
 
+orchestration-scorecard:
+	PYTHONPATH=src python3 -m kube_mlops_platform orchestration-scorecard --output .local
+
 ci-verify:
 	PYTHONPATH=src python3 -m compileall -q src tests
 	test -f .local/reports/mlops_platform_dashboard.html
@@ -68,11 +71,13 @@ ci-verify:
 	test -f .local/reports/slo_error_budget.json
 	test -f .local/reports/cloud_migration_plan.json
 	test -f .local/reports/supply_chain_evidence.json
+	test -f .local/reports/orchestration_scorecard.json
 	test -f .local/supply-chain/subject.checksums.txt
 	python3 -m json.tool .local/reports/governance_evidence_bundle.json >/dev/null
 	python3 -m json.tool .local/reports/slo_error_budget.json >/dev/null
 	python3 -m json.tool .local/reports/cloud_migration_plan.json >/dev/null
 	python3 -m json.tool .local/reports/supply_chain_evidence.json >/dev/null
+	python3 -m json.tool .local/reports/orchestration_scorecard.json >/dev/null
 
 minikube-up:
 	@echo "Start Minikube and install KServe, then apply manifests:"
