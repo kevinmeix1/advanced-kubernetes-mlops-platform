@@ -110,6 +110,8 @@ For auditable environment promotion with Argo CD and Argo Rollouts, see [GitOps 
 
 For backup schedules, restore order, and RPO/RTO evidence, see [disaster recovery](docs/disaster-recovery.md).
 
+For model cards, data cards, risk records, approval evidence, and reproducibility hashes, see [governance evidence](docs/governance-evidence.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

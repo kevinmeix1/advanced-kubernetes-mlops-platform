@@ -11,6 +11,7 @@ from kube_mlops_platform.data import generate_churn_dataset, split_rows
 from kube_mlops_platform.disaster_recovery import build_disaster_recovery_plan
 from kube_mlops_platform.gates import evaluate_gates
 from kube_mlops_platform.gitops_release import build_gitops_plan
+from kube_mlops_platform.governance import build_governance_bundle
 from kube_mlops_platform.io import read_csv, read_json, read_jsonl, write_json
 from kube_mlops_platform.model import predict_score, train_model
 from kube_mlops_platform.network_security import build_network_security_report
@@ -82,8 +83,8 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             passed = {check["name"] for check in report["checks"] if check["passed"]}
             self.assertIn("pod_security_restricted", passed)
             self.assertIn("event_driven_scaling", passed)
+            self.assertIn("immutable_image_digest", passed)
             self.assertIn("no_latest_image_tags", report["failed_checks"])
-            self.assertIn("immutable_image_digest", report["failed_checks"])
             self.assertTrue((Path(tmp) / "reports" / "policy_audit.json").exists())
 
     def test_trace_report_and_otel_collector_exist(self) -> None:
@@ -168,6 +169,25 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual(plan["restore_sequence"][0]["asset"], "namespace and CRDs")
             self.assertTrue(any(item["asset"] == "MLflow registry and artifacts" for item in plan["restore_sequence"]))
             self.assertTrue((Path(tmp) / "reports" / "disaster_recovery_plan.json").exists())
+
+    def test_governance_evidence_bundle_and_kubernetes_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        governance = (repo / "kubernetes" / "governance-evidence.yaml").read_text(encoding="utf-8")
+
+        for expected in ["kind: ConfigMap", "kind: Job", "model-card", "risk-register", "reproducibility-manifest"]:
+            self.assertIn(expected, governance)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            bundle = build_governance_bundle(root)
+            model_card = read_json(root / "governance" / "model_card.json")
+            manifest = read_json(root / "governance" / "reproducibility_manifest.json")
+
+            self.assertEqual(result["governance_bundle"]["release"]["decision"], "approved_for_champion")
+            self.assertEqual(bundle["framework_alignment"]["nist_ai_rmf"], ["Govern", "Map", "Measure", "Manage"])
+            self.assertEqual(model_card["name"], "kserve-churn-risk-baseline")
+            self.assertTrue(any(item["exists"] and len(item["sha256"]) == 64 for item in manifest["artifact_hashes"]))
+            self.assertTrue((root / "reports" / "governance_evidence_bundle.json").exists())
 
     def test_release_control_plane_advances_and_rolls_back(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

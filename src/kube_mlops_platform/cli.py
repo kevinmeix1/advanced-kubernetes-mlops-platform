@@ -11,6 +11,7 @@ from .data import generate_churn_dataset, split_rows
 from .disaster_recovery import build_disaster_recovery_plan
 from .gates import evaluate_gates
 from .gitops_release import build_gitops_plan
+from .governance import build_governance_bundle
 from .io import read_csv, read_json, write_csv, write_json
 from .model import evaluate_model, train_model
 from .monitoring import build_monitoring_report
@@ -123,6 +124,13 @@ def monitor(output: str | Path) -> dict:
     return {"monitoring": report, "release_plan": release_plan, "dashboard": str(dashboard)}
 
 
+def governance(output: str | Path) -> dict:
+    root = root_path(output)
+    if not (root / "reports" / "gate_report.json").exists():
+        monitor(root)
+    return build_governance_bundle(root)
+
+
 def rollback(output: str | Path) -> dict:
     return rollback_model(root_path(output))
 
@@ -141,6 +149,7 @@ def demo(output: str | Path) -> dict:
     network_security = build_network_security_report(root)
     gitops_plan = build_gitops_plan(root)
     disaster_recovery = build_disaster_recovery_plan(root)
+    governance_bundle = build_governance_bundle(root)
     return {
         "train": {"model_version": train_result["model"]["version"], "validation_passed": train_result["validation"]["passed"]},
         "evaluate": eval_result,
@@ -155,6 +164,7 @@ def demo(output: str | Path) -> dict:
         "network_security": network_security,
         "gitops_plan": gitops_plan,
         "disaster_recovery": disaster_recovery,
+        "governance_bundle": governance_bundle,
     }
 
 
@@ -178,6 +188,7 @@ def main(argv: list[str] | None = None) -> int:
         "network-security",
         "gitops-plan",
         "dr-plan",
+        "governance-bundle",
     ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
@@ -216,4 +227,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_gitops_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "dr-plan":
         print(json.dumps(build_disaster_recovery_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "governance-bundle":
+        print(json.dumps(governance(args.output), indent=2, sort_keys=True))
     return 0
