@@ -32,6 +32,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Deadline Alerts", "deadline_alert_plan.json", "Airflow 3 release queue, registration, canary readiness, and rollback deadline policies."),
         ("Cost Observability", "cost_observability_report.json", "OpenCost exporter, allocation labels, GPU spend, namespace budgets, and idle-cost alerts."),
         ("Elastic Workloads", "elastic_workload_plan.json", "Kueue Workload Slices, JobSet elastic release training, replacement scoring slices, and rollback quota recovery."),
+        ("Indexed Job Resilience", "indexed_job_resilience_plan.json", "Kubernetes Indexed Jobs, per-index retries, success policy, pod failure policy, and bounded Airflow release backfills."),
         ("Performance Budget", "performance_budget.json", "Latency, training, queueing, artifact-size, and accuracy gates with remediation actions."),
         ("Queue Simulation", "queue_simulation.json", "Kueue quota, Airflow pool, priority, preemption, and pending workload simulation."),
         ("Release Admission", "release_admission_decision.json", "Fail-closed decision record combining SLOs, provenance, queues, governance, and rollout state."),
