@@ -1,5 +1,7 @@
 # Kubernetes-Native MLOps Platform
 
+[![Kubernetes MLOps CI](https://github.com/kevinmeix1/advanced-kubernetes-mlops-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/kevinmeix1/advanced-kubernetes-mlops-platform/actions/workflows/ci.yml)
+
 A production-style MLOps portfolio project that demonstrates reproducible training, evaluation gates, model registry workflows, KServe-style deployment, rollback, and model observability.
 
 The default demo is local-first and dependency-light so reviewers can run it quickly. The repository also includes integration scaffolding for Metaflow, Airflow, MLflow, Minikube, KServe, Prometheus, and Grafana.
