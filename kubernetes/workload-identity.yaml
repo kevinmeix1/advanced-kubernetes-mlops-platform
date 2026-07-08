@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: airflow-release-runner
+  namespace: mlops
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::111122223333:role/mlops-airflow-release
+  labels:
+    app.kubernetes.io/part-of: kubernetes-mlops-platform
+    spiffe.io/spiffe-id: spiffe://mlops.local/ns/mlops/sa/airflow-release-runner
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: churn-risk-predictor
+  namespace: mlops
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::111122223333:role/kserve-churn-artifact-reader
+  labels:
+    app.kubernetes.io/part-of: kubernetes-mlops-platform
+    spiffe.io/spiffe-id: spiffe://mlops.local/ns/mlops/sa/churn-risk-predictor
+automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: metaflow-training-runner
+  namespace: mlops-batch
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::111122223333:role/metaflow-training-artifact-writer
+  labels:
+    app.kubernetes.io/part-of: kubernetes-mlops-platform
+    spiffe.io/spiffe-id: spiffe://mlops.local/ns/mlops-batch/sa/metaflow-training-runner
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: release-runner-minimal
+  namespace: mlops
+rules:
+  - apiGroups: ["serving.kserve.io"]
+    resources: ["inferenceservices"]
+    verbs: ["get", "patch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: release-runner-minimal
+  namespace: mlops
+subjects:
+  - kind: ServiceAccount
+    name: airflow-release-runner
+    namespace: mlops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-runner-minimal
+---
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: mlops-aws-secrets
+  namespace: mlops
+spec:
+  provider:
+    aws:
+      service: SecretsManager
+      region: us-east-1
+      auth:
+        jwt:
+          serviceAccountRef:
+            name: airflow-release-runner
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: mlflow-tracking-credentials
+  namespace: mlops
+spec:
+  refreshInterval: 30m
+  secretStoreRef:
+    name: mlops-aws-secrets
+    kind: SecretStore
+  target:
+    name: mlflow-tracking-credentials
+    creationPolicy: Owner
+  data:
+    - secretKey: tracking-token
+      remoteRef:
+        key: prod/mlops/mlflow
+        property: token
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-workload-identity-policy
+  namespace: mlops
+data:
+  service_account_name: airflow-release-runner
+  projected_token_audience: sts.amazonaws.com
+  projected_token_ttl_seconds: "3600"
+  kubernetes_pod_operator_default: "pin service_account_name per task"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: workload-identity-egress
+  namespace: mlops
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: kubernetes-mlops-platform
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443

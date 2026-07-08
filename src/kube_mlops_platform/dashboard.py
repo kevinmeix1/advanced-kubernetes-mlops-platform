@@ -49,10 +49,19 @@ def traffic_chips(value: object) -> str:
 def short_path(value: object) -> str:
     text = "" if value is None else str(value)
     parts = [part for part in text.split("/") if part]
-    display = "/".join(parts[-3:]) if len(parts) > 3 else text
+    display = "/".join(parts[-2:]) if len(parts) > 2 else text
     if display and display != text:
         display = f".../{display}"
-    return f'<code title="{esc(text)}">{esc(display)}</code>'
+    return f'<code class="path" title="{esc(text)}">{esc(display)}</code>'
+
+
+def display_label(value: object) -> str:
+    text = "" if value is None else str(value)
+    labels = {
+        "churn-risk-predictor": "churn risk predictor",
+        "kserve-sklearnserver": "KServe sklearn",
+    }
+    return f'<span class="nowrap" title="{esc(text)}">{esc(labels.get(text, text))}</span>'
 
 
 def rows(items: list[dict], columns: list[str]) -> str:
@@ -159,6 +168,7 @@ def render_dashboard(
         th {{ background: #f8fafc; color: #334155; font-weight: 700; }}
         tr:last-child td {{ border-bottom: 0; }}
         code {{ background: #eef2f6; border-radius: 4px; padding: 3px 5px; color: #0f172a; }}
+        code.path, .nowrap {{ display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }}
         .badge {{ display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 800; }}
         .metric .badge {{ width: auto; max-width: max-content; }}
         .pass {{ background: #dcfce7; color: #166534; }}
@@ -203,7 +213,7 @@ def render_dashboard(
               <div class="table-wrap">
                 <table>
                   <tr><th>Service</th><th>Namespace</th><th>Runtime</th><th>Traffic</th><th>Model URI</th></tr>
-                  <tr><td>{esc(deployment_state.get('service_name'))}</td><td>{esc(deployment_state.get('namespace'))}</td><td>{esc(deployment_state.get('runtime'))}</td><td class="traffic">{traffic_chips(deployment_state.get('traffic'))}</td><td>{short_path(deployment_state.get('model_uri'))}</td></tr>
+                  <tr><td>{display_label(deployment_state.get('service_name'))}</td><td>{esc(deployment_state.get('namespace'))}</td><td>{display_label(deployment_state.get('runtime'))}</td><td class="traffic">{traffic_chips(deployment_state.get('traffic'))}</td><td>{short_path(deployment_state.get('model_uri'))}</td></tr>
                 </table>
               </div>
             </div>
