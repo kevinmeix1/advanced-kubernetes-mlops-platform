@@ -1,0 +1,117 @@
+apiVersion: config.kueue.x-k8s.io/v1beta2
+kind: Configuration
+metadata:
+  name: kueue-fair-sharing
+fairSharing:
+  preemptionStrategies:
+    - LessThanOrEqualToFinalShare
+    - LessThanInitialShare
+featureGates:
+  AdmissionFairSharing: true
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: Cohort
+metadata:
+  name: mlops-shared-cohort
+spec:
+  fairSharing:
+    weight: 1
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: churn-release-tenant-queue
+spec:
+  cohort: mlops-shared-cohort
+  fairSharing:
+    weight: 4
+  preemption:
+    withinClusterQueue: LowerPriority
+    reclaimWithinCohort: Any
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: cpu-spot
+          resources:
+            - name: cpu
+              nominalQuota: 24
+              borrowingLimit: 8
+              lendingLimit: 2
+            - name: memory
+              nominalQuota: 96Gi
+              borrowingLimit: 24Gi
+              lendingLimit: 8Gi
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: batch-scoring-tenant-queue
+spec:
+  cohort: mlops-shared-cohort
+  fairSharing:
+    weight: 2
+  preemption:
+    withinClusterQueue: LowerPriority
+    reclaimWithinCohort: LowerPriority
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: cpu-spot
+          resources:
+            - name: cpu
+              nominalQuota: 18
+              borrowingLimit: 10
+              lendingLimit: 6
+            - name: memory
+              nominalQuota: 72Gi
+              borrowingLimit: 32Gi
+              lendingLimit: 16Gi
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: experimentation-tenant-queue
+spec:
+  cohort: mlops-shared-cohort
+  fairSharing:
+    weight: 1
+  preemption:
+    withinClusterQueue: LowerPriority
+    reclaimWithinCohort: Never
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: cpu-spot
+          resources:
+            - name: cpu
+              nominalQuota: 10
+              borrowingLimit: 4
+              lendingLimit: 8
+            - name: memory
+              nominalQuota: 40Gi
+              borrowingLimit: 12Gi
+              lendingLimit: 24Gi
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: release-validation
+  namespace: mlops-prod
+spec:
+  clusterQueue: churn-release-tenant-queue
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: batch-replay
+  namespace: mlops-batch
+spec:
+  clusterQueue: batch-scoring-tenant-queue
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: hpo-low-priority
+  namespace: mlops-experimentation
+spec:
+  clusterQueue: experimentation-tenant-queue
