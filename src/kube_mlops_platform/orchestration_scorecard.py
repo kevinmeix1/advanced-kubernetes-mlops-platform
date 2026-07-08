@@ -13,7 +13,7 @@ def _read_all(repo_root: Path) -> tuple[str, list[Path]]:
         if not base.exists():
             continue
         for path in sorted(base.rglob("*")):
-            if path.is_file() and path.suffix in {".py", ".yaml", ".yml", ".md"}:
+            if path.is_file() and path.suffix in {".ini", ".py", ".yaml", ".yml", ".md"}:
                 files.append(path)
                 chunks.append(path.read_text(encoding="utf-8", errors="ignore"))
     return "\n".join(chunks), files
@@ -70,6 +70,7 @@ def build_orchestration_scorecard(
         ("kubernetes_inplace_resize", _present(content, "inplace_resize_plan.json", "InPlaceOrRecreate", "PodResizePending") and _present(content, "pods/resize", "PodResizeInProgress"), "Kubernetes in-place Pod resize and pod-level resource resize enable non-disruptive release resource adjustments"),
         ("airflow_dag_bundle_versioning", _present(content, "dag_bundle_versioning_plan.json", "GitDagBundle", "dag_bundle_config_list") and _present(content, "rerun_with_latest_version=False", "rerun_with_latest_version = False"), "Airflow 3 GitDagBundle versioning preserves release DAG code across task retries, reruns, and incident replay"),
         ("airflow_asset_partitioning", _present(content, "asset_partitioning_plan.json", "PartitionedAssetTimetable", "CronPartitionTimetable") and _present(content, "dag_run.partition_key", "StartOfHourMapper"), "Airflow 3.2 asset partitioning scopes release backfills and canary decisions to aligned partitions"),
+        ("airflow_multi_team_readiness", _present(content, "multi_team_readiness_plan.json", "team_name", "multi_team = True") and _present(content, "AssetAccessControl", "airflow triggerer --team-name"), "Airflow multi-team preview readiness isolates release DAG bundles, pools, triggerers, secrets, executors, and asset events"),
         ("airflow_event_driven_assets", _present(content, "event_driven_assets_plan.json", "AssetWatcher", "BaseEventTrigger") and _present(content, "shared_stream_key", "AssetAlias"), "Airflow 3 event-driven assets trigger release workflows from external events with shared-stream watcher polling"),
         ("pod_resource_envelopes", _present(content, "pod_resource_envelope_plan.json", "PodLevelResources", "schedulingGates") and _present(content, "scheduler_pending_pods", "PodSchedulingReadiness"), "Kubernetes pod-level resource envelopes and scheduling gates avoid scheduler churn before release prerequisites are ready"),
         ("kueue_cohort_fair_sharing", _present(content, "cohort_fair_sharing_plan.json", "AdmissionFairSharing", "preemptionStrategies") and _present(content, "borrowingLimit", "lendingLimit", "fairSharing"), "Kueue Fair Sharing and Admission Fair Sharing govern cohort borrowing, lending, weights, and preemption"),
@@ -116,6 +117,7 @@ def build_orchestration_scorecard(
             "Airflow 3 DAG Bundles and DAG versioning for reproducible release reruns and scheduler-managed backfills",
             "Kubernetes v1.35 in-place Pod Resize and v1.36 pod-level resource resize for non-disruptive release scaling",
             "Airflow 3.2 asset partitioning with PartitionedAssetTimetable and partition-aware scheduler-managed backfills",
+            "Airflow multi-team preview mode for team-owned DAG Bundles, team-scoped resources, triggerers, executors, and asset-event filtering",
             "Airflow 3 AssetWatchers, BaseEventTrigger compatibility, shared-stream polling, and conditional asset expressions",
             "Kubernetes PodLevelResources and Pod Scheduling Readiness gates for scheduler-efficient release pods",
             "Kueue Fair Sharing and Admission Fair Sharing for cohort-level and LocalQueue-level scheduling fairness",

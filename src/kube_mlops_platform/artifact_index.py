@@ -42,6 +42,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Model Cache", "model_cache_plan.json", "KServe LocalModel cache, modelcar OCI artifacts, promotion cache gates, and rollback preloading."),
         ("DAG Bundle Versioning", "dag_bundle_versioning_plan.json", "Airflow 3 GitDagBundle versioning, rerun semantics, backfill policy, and incident replay guardrails."),
         ("Asset Partitioning", "asset_partitioning_plan.json", "Airflow 3.2 partitioned assets, partition-aware release DAGs, scheduler-managed partition backfills, and partition-key lineage."),
+        ("Multi-Team Readiness", "multi_team_readiness_plan.json", "Airflow multi-team preview readiness for team-owned DAG Bundles, pools, triggerers, secrets, executors, and asset filtering."),
         ("Event-Driven Assets", "event_driven_assets_plan.json", "Airflow 3 AssetWatchers, BaseEventTrigger contracts, shared-stream polling, and conditional release asset expressions."),
         ("Pod Resource Envelopes", "pod_resource_envelope_plan.json", "Kubernetes pod-level resources, scheduling gates, DRA fit checks, and scheduler-churn observability."),
         ("Cohort Fair Sharing", "cohort_fair_sharing_plan.json", "Kueue Fair Sharing, Admission Fair Sharing, borrowing/lending limits, weights, and preemption guardrails."),
