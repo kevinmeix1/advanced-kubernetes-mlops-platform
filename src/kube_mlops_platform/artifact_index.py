@@ -52,6 +52,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Queue Simulation", "queue_simulation.json", "Kueue quota, Airflow pool, priority, preemption, and pending workload simulation."),
         ("Workload-Aware Scheduling", "workload_aware_scheduling_plan.json", "Kubernetes v1.36 Workload/PodGroup readiness for atomic release jobs, topology constraints, DRA sharing, and workload-aware preemption."),
         ("Runtime Security", "runtime_security_plan.json", "Kubernetes v1.36 user namespaces and fine-grained kubelet authorization for release jobs, telemetry readers, and rollback smoke."),
+        ("Control Plane Diagnostics", "control_plane_diagnostics_plan.json", "Kubernetes v1.36 controller staleness, /statusz, /flagz, PSI, and native-histogram readiness for release automation."),
         ("Release Admission", "release_admission_decision.json", "Fail-closed decision record combining SLOs, provenance, queues, governance, and rollout state."),
         ("Tenant Fairness", "tenancy_fairness_report.json", "Namespace quotas, Kueue cohorts, Airflow pools, cost labels, and noisy-neighbor controls."),
         ("Workload Identity", "identity_access_report.json", "Projected tokens, External Secrets, SPIFFE IDs, and Airflow task service accounts."),

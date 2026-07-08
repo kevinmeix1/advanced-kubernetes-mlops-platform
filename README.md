@@ -182,6 +182,8 @@ For Kubernetes v1.36 Workload/PodGroup readiness, atomic release gang scheduling
 
 For Kubernetes v1.36 user namespaces, `hostUsers: false`, fine-grained kubelet authorization, and `nodes/proxy` regression prevention, see [runtime security](docs/runtime-security.md).
 
+For Kubernetes v1.36 controller staleness mitigation, `/statusz`, `/flagz`, PSI metrics, and native-histogram readiness, see [control plane diagnostics](docs/control-plane-diagnostics.md).
+
 For Kueue quota pressure, Airflow pool slots, priority, preemption, and pending workload examples, see [queue capacity simulation](docs/queue-capacity-simulation.md).
 
 For fail-closed promotion decisions that combine SLOs, queue admission, governance, provenance, and rollout state, see [release admission control](docs/release-admission-control.md).

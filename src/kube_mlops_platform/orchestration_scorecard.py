@@ -78,6 +78,7 @@ def build_orchestration_scorecard(
         ("kueue_pending_workload_visibility", _present(content, "pending_workload_visibility_plan.json", "VisibilityOnDemand", "pendingworkloads") and _present(content, "kueue_admission_wait_time_seconds", "kueue_cluster_queue_resource_pending"), "Kueue visibility APIs and metrics explain pending release, batch, and experiment workloads"),
         ("kubernetes_workload_aware_scheduling", _present(content, "workload_aware_scheduling_plan.json", "scheduling.k8s.io/v1alpha2", "kind: PodGroup") and _present(content, "WorkloadWithJob", "completionMode: Indexed", "ResourceClaimTemplate"), "Kubernetes v1.36 Workload and PodGroup APIs prepare release jobs for atomic gang scheduling, topology constraints, DRA ResourceClaims, and workload-aware preemption"),
         ("runtime_security_userns_kubelet_authz", _present(content, "runtime_security_plan.json", "hostUsers: false", "KubeletFineGrainedAuthz") and _present(content, "nodes/metrics", "nodes/stats", "ValidatingAdmissionPolicy"), "Kubernetes v1.36 user namespaces and fine-grained kubelet authorization reduce host and kubelet blast radius for release telemetry"),
+        ("control_plane_freshness_diagnostics", _present(content, "control_plane_diagnostics_plan.json", "/statusz", "/flagz") and _present(content, "ReleaseControllerCacheStale", "KubeletPSIMemoryStallHigh", "NativeHistogramMetrics"), "Kubernetes v1.36 controller staleness, ComponentStatusz, ComponentFlagz, PSI, and native histogram readiness protect release automation from stale control-plane state"),
         ("event_driven_scaling", _present(content, "ScaledObject", "ScaledJob"), "KEDA ScaledObjects or ScaledJobs react to operational backlog"),
         ("horizontal_autoscaling", "HorizontalPodAutoscaler" in content, "HPA rules keep workers and services elastic"),
         ("opentelemetry", _present(content, "opentelemetry-collector", "OpenTelemetry"), "OTel collector config captures runtime traces and metrics"),
@@ -127,6 +128,7 @@ def build_orchestration_scorecard(
             "Kueue VisibilityOnDemand and queue metrics for pending workload triage before release gate timeouts",
             "Kubernetes v1.36 Workload-Aware Scheduling with scheduling.k8s.io/v1alpha2 Workload/PodGroup, WorkloadWithJob, topology constraints, and PodGroup-scoped DRA ResourceClaims",
             "Kubernetes v1.36 user namespaces GA with pod.spec.hostUsers=false and fine-grained kubelet API authorization GA using nodes/metrics, nodes/stats, and nodes/pods instead of nodes/proxy",
+            "Kubernetes v1.36 controller staleness mitigation, ComponentStatusz, ComponentFlagz, PSI metrics, and native histogram readiness",
             "GitHub artifact attestations, SLSA provenance, and Sigstore policy-controller for supply-chain integrity",
         ],
         "next_actions": [
