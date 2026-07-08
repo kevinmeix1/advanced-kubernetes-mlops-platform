@@ -128,6 +128,8 @@ For latency, training-runtime, queue-wait, artifact-size, and quality regression
 
 For Kueue quota pressure, Airflow pool slots, priority, preemption, and pending workload examples, see [queue capacity simulation](docs/queue-capacity-simulation.md).
 
+For fail-closed promotion decisions that combine SLOs, queue admission, governance, provenance, and rollout state, see [release admission control](docs/release-admission-control.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

@@ -1,0 +1,90 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: churn-release-evidence-required
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["serving.kserve.io"]
+        apiVersions: ["v1beta1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["inferenceservices"]
+  validations:
+    - expression: "has(object.metadata.annotations) && has(object.metadata.annotations['mlops.dev/release-decision'])"
+      message: "InferenceService changes must carry the generated release admission decision."
+    - expression: "object.metadata.annotations['mlops.dev/release-decision'] in ['admit_canary', 'hold_canary', 'freeze_promotion', 'rollback_champion', 'throttle_release_queue']"
+      message: "release-decision must be one of the controller-approved actions."
+    - expression: "has(object.metadata.annotations['mlops.dev/evidence-sha']) && size(object.metadata.annotations['mlops.dev/evidence-sha']) == 64"
+      message: "release admission requires a sha256 evidence bundle reference."
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: churn-release-evidence-required
+spec:
+  policyName: churn-release-evidence-required
+  validationActions: ["Deny"]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: churn-release-admission-analysis
+  namespace: mlops
+spec:
+  metrics:
+    - name: slo-burn-rate
+      interval: 2m
+      count: 3
+      failureLimit: 1
+      successCondition: result[0] < 6
+      provider:
+        prometheus:
+          address: http://prometheus-operated.monitoring.svc:9090
+          query: max(mlops_slo_burn_rate{service="churn-risk"})
+    - name: canary-p95-latency
+      interval: 2m
+      count: 3
+      failureLimit: 1
+      successCondition: result[0] < 0.05
+      provider:
+        prometheus:
+          address: http://prometheus-operated.monitoring.svc:9090
+          query: histogram_quantile(0.95, sum(rate(kserve_request_duration_seconds_bucket{model="churn-risk"}[5m])) by (le))
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: churn-release-admission
+  namespace: mlops
+spec:
+  groups:
+    - name: churn.release.admission
+      rules:
+        - alert: ChurnReleaseAdmissionUnsafeAllow
+          expr: mlops_release_admission_unsafe_allow{service="churn-risk"} > 0
+          for: 1m
+          labels:
+            severity: critical
+            team: ml-platform
+          annotations:
+            summary: Release admission attempted to allow a change while one or more fail-closed gates failed.
+        - alert: ChurnReleaseAdmissionFreezeActive
+          expr: mlops_release_admission_freeze{service="churn-risk"} > 0
+          for: 5m
+          labels:
+            severity: warning
+            team: ml-platform
+          annotations:
+            summary: Churn release promotion is frozen by SLO, queue, governance, or provenance policy.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: churn-release-admission-assets
+  namespace: mlops
+data:
+  airflow_assets.txt: |
+    asset://mlops/churn/gate-report
+    asset://mlops/churn/slo-error-budget
+    asset://mlops/churn/release-admission-decision

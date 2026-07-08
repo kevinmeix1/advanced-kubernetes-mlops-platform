@@ -23,6 +23,7 @@ from .orchestration_scorecard import build_orchestration_scorecard
 from .policy_audit import audit_platform_policy
 from .performance_budget import build_performance_budget_report
 from .queue_simulator import build_queue_simulation
+from .release_admission import build_release_admission_decision
 from .registry import champion_metadata, promote_candidate, register_candidate, rollback as rollback_model, log_mlflow_run
 from .resource_optimizer import build_resource_optimization_report
 from .serving import deploy_local_kserve, health, predict
@@ -174,13 +175,6 @@ def demo(output: str | Path) -> dict:
     )
     performance_budget = build_performance_budget_report(root)
     queue_simulation = build_queue_simulation(root)
-    artifact_index = render_artifact_index(
-        root,
-        title="Kubernetes MLOps Platform",
-        description="Reviewer landing page for generated dashboard, governance evidence, SLOs, migration, and reliability artifacts.",
-        dashboard="mlops_platform_dashboard.html",
-    )
-    orchestration_scorecard = build_orchestration_scorecard(root, project="Kubernetes MLOps Platform")
     supply_chain = build_supply_chain_evidence(
         root,
         project="Kubernetes MLOps Platform",
@@ -188,6 +182,14 @@ def demo(output: str | Path) -> dict:
         workflow="Kubernetes MLOps CI",
         namespace="mlops",
     )
+    release_admission = build_release_admission_decision(root)
+    artifact_index = render_artifact_index(
+        root,
+        title="Kubernetes MLOps Platform",
+        description="Reviewer landing page for generated dashboard, governance evidence, SLOs, migration, and reliability artifacts.",
+        dashboard="mlops_platform_dashboard.html",
+    )
+    orchestration_scorecard = build_orchestration_scorecard(root, project="Kubernetes MLOps Platform")
     return {
         "train": {"model_version": train_result["model"]["version"], "validation_passed": train_result["validation"]["passed"]},
         "evaluate": eval_result,
@@ -208,6 +210,7 @@ def demo(output: str | Path) -> dict:
         "accelerator_capacity": accelerator_capacity,
         "performance_budget": performance_budget,
         "queue_simulation": queue_simulation,
+        "release_admission": release_admission,
         "artifact_index": str(artifact_index),
         "orchestration_scorecard": orchestration_scorecard,
         "supply_chain": supply_chain,
@@ -242,6 +245,7 @@ def main(argv: list[str] | None = None) -> int:
         "accelerator-plan",
         "performance-budget",
         "queue-simulation",
+        "release-admission",
     ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
@@ -296,4 +300,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_performance_budget_report(args.output), indent=2, sort_keys=True))
     elif args.command == "queue-simulation":
         print(json.dumps(build_queue_simulation(args.output), indent=2, sort_keys=True))
+    elif args.command == "release-admission":
+        print(json.dumps(build_release_admission_decision(args.output), indent=2, sort_keys=True))
     return 0

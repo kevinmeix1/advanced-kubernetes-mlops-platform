@@ -26,6 +26,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Accelerator Plan", "accelerator_capacity_plan.json", "GPU, DRA, Kueue, MIG, and time-slicing plan for accelerator-aware workloads."),
         ("Performance Budget", "performance_budget.json", "Latency, training, queueing, artifact-size, and accuracy gates with remediation actions."),
         ("Queue Simulation", "queue_simulation.json", "Kueue quota, Airflow pool, priority, preemption, and pending workload simulation."),
+        ("Release Admission", "release_admission_decision.json", "Fail-closed decision record combining SLOs, provenance, queues, governance, and rollout state."),
         ("Resource Optimization", "resource_optimization.json", "Rightsizing recommendations for requests, limits, HPA, VPA, and Kueue admission."),
         ("Network Security", "network_security.json", "mTLS, network policy, and service-to-service access topology for the platform."),
         ("Chaos Drill", "chaos_drill_report.json", "Failure injection scenarios with blast radius, controls, and recovery objectives."),
