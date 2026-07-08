@@ -1,4 +1,4 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan tenancy-report identity-report performance-budget queue-simulation release-admission ci-verify minikube-up kubernetes-plan test clean
+.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan event-driven-assets tenancy-report identity-report performance-budget queue-simulation release-admission ci-verify minikube-up kubernetes-plan test clean
 
 demo:
 	PYTHONPATH=src python3 -m kube_mlops_platform demo --output .local
@@ -105,6 +105,9 @@ model-cache:
 dag-bundle-plan:
 	PYTHONPATH=src python3 -m kube_mlops_platform dag-bundle-plan --output .local
 
+event-driven-assets:
+	PYTHONPATH=src python3 -m kube_mlops_platform event-driven-assets --output .local
+
 tenancy-report:
 	PYTHONPATH=src python3 -m kube_mlops_platform tenancy-report --output .local
 
@@ -143,6 +146,7 @@ ci-verify:
 	test -f .local/reports/multikueue_dispatch_plan.json
 	test -f .local/reports/model_cache_plan.json
 	test -f .local/reports/dag_bundle_versioning_plan.json
+	test -f .local/reports/event_driven_assets_plan.json
 	test -f .local/reports/tenancy_fairness_report.json
 	test -f .local/reports/identity_access_report.json
 	test -f .local/reports/performance_budget.json
@@ -168,6 +172,7 @@ ci-verify:
 	python3 -m json.tool .local/reports/multikueue_dispatch_plan.json >/dev/null
 	python3 -m json.tool .local/reports/model_cache_plan.json >/dev/null
 	python3 -m json.tool .local/reports/dag_bundle_versioning_plan.json >/dev/null
+	python3 -m json.tool .local/reports/event_driven_assets_plan.json >/dev/null
 	python3 -m json.tool .local/reports/tenancy_fairness_report.json >/dev/null
 	python3 -m json.tool .local/reports/identity_access_report.json >/dev/null
 	python3 -m json.tool .local/reports/performance_budget.json >/dev/null

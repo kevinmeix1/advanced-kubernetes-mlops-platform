@@ -18,6 +18,13 @@ except Exception:
 MODEL_SEGMENTS = ["enterprise", "self_serve", "high_value", "new_customer"]
 QUALITY_SUITES = ["schema", "freshness", "distribution", "label_balance"]
 RELEASE_STAGES = ["candidate", "shadow", "canary", "champion"]
+EVENT_DRIVEN_ASSET_EXPRESSION = "(RAW_EVENTS & CANDIDATE_MODEL) | ROLLBACK_REQUEST"
+ASSET_WATCHER_CONTRACTS = {
+    "AssetWatcher": "external Kafka, MLflow, and KServe events update Airflow assets",
+    "BaseEventTrigger": "watchers must inherit from BaseEventTrigger to avoid rescheduling loops",
+    "shared_stream_key": "sibling watchers share one upstream poll where subscriber semantics allow it",
+    "AssetAlias": "runtime model artifact URIs resolve after MLflow registration",
+}
 
 
 def on_failure_callback(context):

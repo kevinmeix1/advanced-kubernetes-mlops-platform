@@ -65,6 +65,7 @@ def build_orchestration_scorecard(
         ("multikueue_dispatch", _present(content, "multikueue_dispatch_plan.json", "MultiKueueConfig", "MultiKueueCluster") and _present(content, "promotionPolicy", "status.clusterName"), "Kueue MultiKueue dispatch covers release worker clusters, candidate freeze semantics, status sync, and rollback-smoke protection"),
         ("kserve_model_cache", _present(content, "model_cache_plan.json", "LocalModelNamespaceCache", "LocalModelNodeGroup") and _present(content, "ModelDownloaded", "promotion_requires_cache_evidence"), "KServe LocalModel cache and modelcar OCI storage gate release promotion and rollback cold-start risk"),
         ("airflow_dag_bundle_versioning", _present(content, "dag_bundle_versioning_plan.json", "GitDagBundle", "dag_bundle_config_list") and _present(content, "rerun_with_latest_version=False", "rerun_with_latest_version = False"), "Airflow 3 GitDagBundle versioning preserves release DAG code across task retries, reruns, and incident replay"),
+        ("airflow_event_driven_assets", _present(content, "event_driven_assets_plan.json", "AssetWatcher", "BaseEventTrigger") and _present(content, "shared_stream_key", "AssetAlias"), "Airflow 3 event-driven assets trigger release workflows from external events with shared-stream watcher polling"),
         ("event_driven_scaling", _present(content, "ScaledObject", "ScaledJob"), "KEDA ScaledObjects or ScaledJobs react to operational backlog"),
         ("horizontal_autoscaling", "HorizontalPodAutoscaler" in content, "HPA rules keep workers and services elastic"),
         ("opentelemetry", _present(content, "opentelemetry-collector", "OpenTelemetry"), "OTel collector config captures runtime traces and metrics"),
@@ -101,6 +102,7 @@ def build_orchestration_scorecard(
             "Kueue MultiKueue for manager-to-worker release dispatch, worker status sync, and promotion freeze semantics",
             "KServe LocalModelCache, LocalModelNodeGroup, and modelcar OCI storage as release cache evidence",
             "Airflow 3 DAG Bundles and DAG versioning for reproducible release reruns and scheduler-managed backfills",
+            "Airflow 3 AssetWatchers, BaseEventTrigger compatibility, shared-stream polling, and conditional asset expressions",
             "GitHub artifact attestations, SLSA provenance, and Sigstore policy-controller for supply-chain integrity",
         ],
         "next_actions": [
