@@ -100,6 +100,8 @@ For the operator-facing release planner, see [advanced control plane layer](docs
 
 For Airflow 3 release queue, candidate registration, canary readiness, and rollback Deadline Alerts with bounded callbacks, see [Airflow deadline alerts](docs/airflow-deadline-alerts.md).
 
+For OpenCost exporter metrics, Prometheus budget alerts, GPU spend attribution, and allocation labels, see [cost observability and FinOps](docs/cost-observability.md).
+
 For the policy-as-code audit layer, see [security and governance](docs/security-governance.md).
 
 For OpenTelemetry-style runtime traces, see [observability and tracing](docs/observability-tracing.md).

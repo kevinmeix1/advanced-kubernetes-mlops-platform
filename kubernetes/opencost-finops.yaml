@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opencost-exporter
+  labels:
+    app.kubernetes.io/name: opencost
+    platform.mlops.dev/owner: platform-finops
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencost-prometheus-scrape
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: opencost-finops
+    platform.mlops.dev/component: cost-observability
+data:
+  prometheus.yml: |
+    scrape_configs:
+      - job_name: opencost
+        scrape_interval: 1m
+        scrape_timeout: 10s
+        metrics_path: /metrics
+        scheme: http
+        static_configs:
+          - targets:
+              - opencost.opencost-exporter:9003
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlops-cost-allocation-contract
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: opencost-finops
+    platform.mlops.dev/component: allocation-contract
+data:
+  required-labels: team,cost-center,model,workload-type,environment
+  allocation-dimensions: namespace,deployment,service,label_team,label_cost_center,label_model,label_workload_type
+  cpu-monthly-query: |
+    sum(container_cpu_allocation * on(node) group_left node_cpu_hourly_cost) by (namespace, deployment, label_team, label_cost_center, label_model) * 730
+  memory-monthly-query: |
+    sum(container_memory_allocation_bytes * on(node) group_left node_ram_hourly_cost) by (namespace, pod, label_team, label_cost_center, label_model) * 730 / 1024 / 1024 / 1024
+  gpu-monthly-query: |
+    sum(node_gpu_hourly_cost) by (namespace, node, label_team, label_cost_center, label_model) * 730
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mlops-cost-observability
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: opencost-finops
+    platform.mlops.dev/component: budget-alerts
+spec:
+  groups:
+    - name: mlops.finops.opencost
+      rules:
+        - alert: MLOpsMonthlyCostBudgetExceeded
+          expr: |
+            sum(container_cpu_allocation * on(node) group_left node_cpu_hourly_cost) by (namespace) * 730
+            + sum(container_memory_allocation_bytes * on(node) group_left node_ram_hourly_cost) by (namespace) * 730 / 1024 / 1024 / 1024
+            > 1840
+          for: 30m
+          labels:
+            severity: warning
+            team: ml-platform
+          annotations:
+            summary: Kubernetes MLOps monthly budget is projected above the release budget.
+            runbook_url: docs/cost-observability.md
+        - alert: MLOpsIdleGpuCostWaste
+          expr: |
+            sum(node_gpu_hourly_cost) by (namespace) > 0
+            unless sum(rate(container_gpu_usage_seconds_total[5m])) by (namespace) > 0
+          for: 15m
+          labels:
+            severity: warning
+            team: ml-platform
+          annotations:
+            summary: GPU spend is present without matching utilization for canary or batch analysis.
+            runbook_url: docs/cost-observability.md
+        - alert: MLOpsCostAllocationLabelMissing
+          expr: |
+            count by (namespace) (
+              kube_pod_info{namespace="mlops"}
+              unless on(namespace, pod) kube_pod_labels{namespace="mlops", label_cost_center!=""}
+            ) > 0
+          for: 10m
+          labels:
+            severity: page
+            team: platform-finops
+          annotations:
+            summary: MLOps workload is missing cost allocation labels.
+            runbook_url: docs/cost-observability.md
