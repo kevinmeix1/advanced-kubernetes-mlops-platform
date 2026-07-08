@@ -1,0 +1,81 @@
+apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: gpu-l4-shared
+  labels:
+    platform.mlops.dev/device-tier: shared-canary
+spec:
+  selectors:
+    - cel:
+        expression: "device.driver == 'gpu.resource.kubernetes.io'"
+---
+apiVersion: resource.k8s.io/v1
+kind: ResourceClaimTemplate
+metadata:
+  name: l4-shared-canary
+  namespace: mlops
+  labels:
+    platform.mlops.dev/workload: churn-canary-inference
+spec:
+  spec:
+    devices:
+      requests:
+        - name: gpu
+          exactly:
+            deviceClassName: gpu-l4-shared
+            allocationMode: ExactCount
+            count: 1
+      config:
+        - opaque:
+            driver: gpu.resource.kubernetes.io
+            parameters:
+              sharingStrategy: time-slicing
+              replicas: "4"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: churn-canary-dra-smoke
+  namespace: mlops
+  labels:
+    app.kubernetes.io/component: device-allocation
+  annotations:
+    kueue.x-k8s.io/queue-name: churn-release-queue
+    kueue.x-k8s.io/priority-class: release-critical
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      serviceAccountName: kserve-predictor
+      restartPolicy: Never
+      resourceClaims:
+        - name: canary-gpu
+          resourceClaimTemplateName: l4-shared-canary
+      containers:
+        - name: canary-load-check
+          image: ghcr.io/kevinmeix1/churn-risk-canary@sha256:replace-with-digest
+          args: ["python", "-m", "kube_mlops_platform.cli", "predict", "--output", "/workspace"]
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: churn-dra-resource-claims
+  namespace: mlops
+spec:
+  groups:
+    - name: churn.dra.claims
+      rules:
+        - alert: ChurnDRAClaimPending
+          expr: kube_resourceclaim_status_phase{namespace="mlops",phase="Pending"} > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "A DRA ResourceClaim is pending; hold canary traffic increase until a device is allocated."

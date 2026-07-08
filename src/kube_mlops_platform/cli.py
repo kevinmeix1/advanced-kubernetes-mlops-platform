@@ -12,6 +12,7 @@ from .control_plane import build_release_plan
 from .dashboard import render_dashboard
 from .data import generate_churn_dataset, split_rows
 from .disaster_recovery import build_disaster_recovery_plan
+from .device_allocation import build_device_allocation_plan
 from .gates import evaluate_gates
 from .gitops_release import build_gitops_plan
 from .governance import build_governance_bundle
@@ -175,6 +176,7 @@ def demo(output: str | Path) -> dict:
         project="Kubernetes MLOps Platform",
         primary_workload="training, release, and batch scoring control plane",
     )
+    device_allocation = build_device_allocation_plan(root)
     tenancy = build_tenancy_report(root)
     identity_access = build_identity_access_report(root)
     performance_budget = build_performance_budget_report(root)
@@ -212,6 +214,7 @@ def demo(output: str | Path) -> dict:
         "slo_error_budget": slo_error_budget,
         "cloud_migration": cloud_migration,
         "accelerator_capacity": accelerator_capacity,
+        "device_allocation": device_allocation,
         "tenancy": tenancy,
         "identity_access": identity_access,
         "performance_budget": performance_budget,
@@ -249,6 +252,7 @@ def main(argv: list[str] | None = None) -> int:
         "supply-chain",
         "orchestration-scorecard",
         "accelerator-plan",
+        "device-plan",
         "tenancy-report",
         "identity-report",
         "performance-budget",
@@ -304,6 +308,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_orchestration_scorecard(args.output, project="Kubernetes MLOps Platform"), indent=2, sort_keys=True))
     elif args.command == "accelerator-plan":
         print(json.dumps(build_accelerator_capacity_plan(args.output, project="Kubernetes MLOps Platform", primary_workload="training, release, and batch scoring control plane"), indent=2, sort_keys=True))
+    elif args.command == "device-plan":
+        print(json.dumps(build_device_allocation_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "tenancy-report":
         print(json.dumps(build_tenancy_report(args.output), indent=2, sort_keys=True))
     elif args.command == "identity-report":
