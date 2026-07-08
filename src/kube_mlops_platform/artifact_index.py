@@ -25,8 +25,11 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Policy Audit", "policy_audit.json", "Security and platform policy checks for manifests, supply chain, and runtime posture."),
         ("Accelerator Plan", "accelerator_capacity_plan.json", "GPU, DRA, Kueue, MIG, and time-slicing plan for accelerator-aware workloads."),
         ("Performance Budget", "performance_budget.json", "Latency, training, queueing, artifact-size, and accuracy gates with remediation actions."),
+        ("Queue Simulation", "queue_simulation.json", "Kueue quota, Airflow pool, priority, preemption, and pending workload simulation."),
         ("Resource Optimization", "resource_optimization.json", "Rightsizing recommendations for requests, limits, HPA, VPA, and Kueue admission."),
         ("Network Security", "network_security.json", "mTLS, network policy, and service-to-service access topology for the platform."),
+        ("Chaos Drill", "chaos_drill_report.json", "Failure injection scenarios with blast radius, controls, and recovery objectives."),
+        ("GitOps Plan", "gitops_plan.json", "Promotion waves, rollback commands, and release gates for GitOps-controlled deployment."),
         ("Orchestration Scorecard", "orchestration_scorecard.json", "Automated scan of advanced Airflow, Kubernetes, lineage, and security controls."),
     ]
     card_html = "\n".join(

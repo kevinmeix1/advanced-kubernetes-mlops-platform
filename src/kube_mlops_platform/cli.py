@@ -22,6 +22,7 @@ from .network_security import build_network_security_report
 from .orchestration_scorecard import build_orchestration_scorecard
 from .policy_audit import audit_platform_policy
 from .performance_budget import build_performance_budget_report
+from .queue_simulator import build_queue_simulation
 from .registry import champion_metadata, promote_candidate, register_candidate, rollback as rollback_model, log_mlflow_run
 from .resource_optimizer import build_resource_optimization_report
 from .serving import deploy_local_kserve, health, predict
@@ -172,6 +173,7 @@ def demo(output: str | Path) -> dict:
         primary_workload="training, release, and batch scoring control plane",
     )
     performance_budget = build_performance_budget_report(root)
+    queue_simulation = build_queue_simulation(root)
     artifact_index = render_artifact_index(
         root,
         title="Kubernetes MLOps Platform",
@@ -205,6 +207,7 @@ def demo(output: str | Path) -> dict:
         "cloud_migration": cloud_migration,
         "accelerator_capacity": accelerator_capacity,
         "performance_budget": performance_budget,
+        "queue_simulation": queue_simulation,
         "artifact_index": str(artifact_index),
         "orchestration_scorecard": orchestration_scorecard,
         "supply_chain": supply_chain,
@@ -238,6 +241,7 @@ def main(argv: list[str] | None = None) -> int:
         "orchestration-scorecard",
         "accelerator-plan",
         "performance-budget",
+        "queue-simulation",
     ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
@@ -290,4 +294,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_accelerator_capacity_plan(args.output, project="Kubernetes MLOps Platform", primary_workload="training, release, and batch scoring control plane"), indent=2, sort_keys=True))
     elif args.command == "performance-budget":
         print(json.dumps(build_performance_budget_report(args.output), indent=2, sort_keys=True))
+    elif args.command == "queue-simulation":
+        print(json.dumps(build_queue_simulation(args.output), indent=2, sort_keys=True))
     return 0

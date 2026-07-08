@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: churn-release-queue-simulation
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: churn-risk
+    app.kubernetes.io/component: queue-simulation
+data:
+  nominal_cpu: "16"
+  nominal_memory_gib: "64"
+  nominal_gpu: "1"
+  airflow_pool_slots: "8"
+  critical_priority_floor: "900"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: mlops-emergency-rollback
+value: 100000
+globalDefault: false
+description: "Emergency rollback validation may preempt lower-priority release or experimentation work."
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: churn-release-queue-pressure
+  namespace: mlops
+spec:
+  groups:
+    - name: churn-release.queue-simulation
+      rules:
+        - alert: ChurnReleaseQueuePressureHigh
+          expr: |
+            sum(kueue_pending_workloads{cluster_queue="churn-release-cluster-queue"}) > 3
+          for: 15m
+          labels:
+            severity: warning
+            owner: ml-platform
+          annotations:
+            summary: Release queue has sustained pending workloads.
+            runbook_url: docs/queue-capacity-simulation.md
