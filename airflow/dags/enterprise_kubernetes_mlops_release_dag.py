@@ -142,6 +142,24 @@ if AIRFLOW_AVAILABLE:
                 ["kubectl", "get", "localqueue", "churn-release-queue", "-n", "mlops"],
                 priority_weight=4,
             )
+            submit_ray_canary_analysis = pod_task(
+                "submit_kuberay_canary_analysis",
+                ["kubectl", "apply", "-f", "kubernetes/kuberay-kueue-workloads.yaml"],
+                priority_weight=4,
+            )
+            wait_for_ray_canary_analysis = pod_task(
+                "wait_for_kuberay_canary_analysis_deferrable",
+                [
+                    "kubectl",
+                    "wait",
+                    "--for=condition=Complete",
+                    "rayjob/churn-canary-analysis",
+                    "-n",
+                    "mlops",
+                    "--timeout=20m",
+                ],
+                priority_weight=4,
+            )
             verify_serving_budget = pod_task(
                 "verify_serving_latency_budget",
                 ["python", "-m", "kube_mlops_platform", "monitor"],
@@ -160,7 +178,7 @@ if AIRFLOW_AVAILABLE:
                 ],
                 priority_weight=5,
             )
-            reserve_release_quota >> verify_serving_budget >> wait_for_kserve_readiness
+            reserve_release_quota >> submit_ray_canary_analysis >> wait_for_ray_canary_analysis >> verify_serving_budget >> wait_for_kserve_readiness
             return wait_for_kserve_readiness
 
         @task

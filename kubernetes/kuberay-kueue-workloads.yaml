@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: churn-ray-entrypoints
+  namespace: mlops
+data:
+  canary_analysis.py: |
+    import ray
+
+    ray.init()
+
+    @ray.remote
+    def compare_segment(segment):
+        return {"segment": segment, "shadow_delta": 0.021, "passed": True}
+
+    segments = ["enterprise", "self_serve", "high_value", "new_customer"]
+    print(ray.get([compare_segment.remote(segment) for segment in segments]))
+---
+apiVersion: ray.io/v1
+kind: RayJob
+metadata:
+  name: churn-canary-analysis
+  namespace: mlops
+  labels:
+    app.kubernetes.io/component: kuberay-release-analysis
+    kueue.x-k8s.io/queue-name: churn-release-queue
+  annotations:
+    kueue.x-k8s.io/elastic-job: "true"
+spec:
+  shutdownAfterJobFinishes: true
+  entrypoint: python /home/ray/jobs/canary_analysis.py
+  runtimeEnvYAML: |
+    env_vars:
+      RELEASE_STAGE: canary
+  rayClusterSpec:
+    enableInTreeAutoscaling: true
+    headGroupSpec:
+      serviceType: ClusterIP
+      rayStartParams:
+        dashboard-host: 0.0.0.0
+      template:
+        spec:
+          containers:
+            - name: ray-head
+              image: rayproject/ray@sha256:replace-with-approved-digest
+              ports:
+                - containerPort: 8265
+                  name: dashboard
+                - containerPort: 6379
+                  name: gcs
+              resources:
+                requests:
+                  cpu: "1"
+                  memory: 2Gi
+                limits:
+                  cpu: "2"
+                  memory: 4Gi
+              volumeMounts:
+                - name: job-code
+                  mountPath: /home/ray/jobs
+          volumes:
+            - name: job-code
+              configMap:
+                name: churn-ray-entrypoints
+    workerGroupSpecs:
+      - groupName: canary-workers
+        replicas: 2
+        minReplicas: 2
+        maxReplicas: 8
+        rayStartParams: {}
+        template:
+          spec:
+            containers:
+              - name: ray-worker
+                image: rayproject/ray@sha256:replace-with-approved-digest
+                resources:
+                  requests:
+                    cpu: "2"
+                    memory: 4Gi
+                  limits:
+                    cpu: "4"
+                    memory: 8Gi
+---
+apiVersion: ray.io/v1
+kind: RayJob
+metadata:
+  name: churn-segment-hpo-sweep
+  namespace: mlops
+  labels:
+    app.kubernetes.io/component: kuberay-hpo
+    kueue.x-k8s.io/queue-name: churn-research-queue
+  annotations:
+    kueue.x-k8s.io/elastic-job: "true"
+spec:
+  shutdownAfterJobFinishes: true
+  entrypoint: python -c "import ray; ray.init(); print('segment hpo sweep admitted')"
+  rayClusterSpec:
+    enableInTreeAutoscaling: true
+    headGroupSpec:
+      rayStartParams:
+        dashboard-host: 0.0.0.0
+      template:
+        spec:
+          containers:
+            - name: ray-head
+              image: rayproject/ray@sha256:replace-with-approved-digest
+              resources:
+                requests:
+                  cpu: "500m"
+                  memory: 1Gi
+                limits:
+                  cpu: "1"
+                  memory: 2Gi
+    workerGroupSpecs:
+      - groupName: gpu-sweep-workers
+        replicas: 0
+        minReplicas: 0
+        maxReplicas: 16
+        rayStartParams: {}
+        template:
+          spec:
+            containers:
+              - name: ray-worker
+                image: rayproject/ray@sha256:replace-with-approved-digest
+                resources:
+                  requests:
+                    cpu: "4"
+                    memory: 16Gi
+                    nvidia.com/gpu: "1"
+                  limits:
+                    cpu: "8"
+                    memory: 32Gi
+                    nvidia.com/gpu: "1"
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kuberay-release-analysis
+  namespace: mlops
+spec:
+  groups:
+    - name: kuberay.release.analysis
+      rules:
+        - alert: ChurnRayWorkersPending
+          expr: ray_cluster_pending_nodes{ray_io_cluster=~"churn-.*"} > 2
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Ray release-analysis workers are pending behind Kueue or cluster capacity."
