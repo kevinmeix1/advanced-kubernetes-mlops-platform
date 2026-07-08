@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from kube_mlops_platform.accelerator_plan import build_accelerator_capacity_plan
 from kube_mlops_platform.chaos import run_chaos_drill
 from kube_mlops_platform.cloud_migration import build_cloud_migration_plan
 from kube_mlops_platform.cli import demo, train
@@ -234,8 +235,22 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
 
         for expected in ["actions/upload-artifact@v6", "actions/attest@v4", "attestations: write", "GITHUB_STEP_SUMMARY", "make ci-verify", "concurrency"]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
+
+    def test_accelerator_capacity_plan_and_kubernetes_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        manifest = (repo / "kubernetes" / "accelerator-scheduling.yaml").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plan = build_accelerator_capacity_plan(root, project="Kubernetes MLOps Platform", primary_workload="training")
+
+            self.assertEqual(len(plan["profiles"]), 3)
+            self.assertIn("gpu-a100-mig", {profile["kueue_flavor"] for profile in plan["profiles"]})
+            self.assertTrue((root / "reports" / "accelerator_capacity_plan.json").exists())
+            self.assertIn("ResourceFlavor", manifest)
+            self.assertIn("ResourceClaimTemplate", manifest)
+            self.assertIn("nvidia.com/mig-1g.10gb", manifest)
 
     def test_orchestration_scorecard_covers_advanced_controls(self) -> None:
         repo = Path(__file__).resolve().parents[1]
@@ -284,6 +299,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
                 "mlops_platform_dashboard.html",
                 "governance_evidence_bundle.json",
                 "slo_error_budget.json",
+                "accelerator_capacity_plan.json",
                 "orchestration_scorecard.json",
                 "supply_chain_evidence.json",
                 "cloud_migration_plan.json",
@@ -321,6 +337,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual(health(root)["status"], "Ready")
             self.assertTrue((root / "reports" / "mlops_platform_dashboard.html").exists())
             self.assertTrue((root / "reports" / "index.html").exists())
+            self.assertTrue((root / "reports" / "accelerator_capacity_plan.json").exists())
             self.assertTrue((root / "reports" / "orchestration_scorecard.json").exists())
             self.assertTrue((root / "reports" / "supply_chain_evidence.json").exists())
             self.assertGreaterEqual(len(read_jsonl(root / "logs" / "predictions.jsonl")), 15)

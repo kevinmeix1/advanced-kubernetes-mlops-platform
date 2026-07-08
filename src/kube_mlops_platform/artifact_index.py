@@ -23,7 +23,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Cloud Migration Plan", "cloud_migration_plan.json", "AWS, Snowflake, and Databricks migration notes with cost and operational trade-offs."),
         ("Disaster Recovery Plan", "disaster_recovery_plan.json", "Backup, restore, failover, and replay plan aligned with Kubernetes recovery patterns."),
         ("Policy Audit", "policy_audit.json", "Security and platform policy checks for manifests, supply chain, and runtime posture."),
-        ("Traceability", "trace_report.json", "Model, data, deployment, and workload trace links for release investigation."),
+        ("Accelerator Plan", "accelerator_capacity_plan.json", "GPU, DRA, Kueue, MIG, and time-slicing plan for accelerator-aware workloads."),
         ("Orchestration Scorecard", "orchestration_scorecard.json", "Automated scan of advanced Airflow, Kubernetes, lineage, and security controls."),
     ]
     card_html = "\n".join(

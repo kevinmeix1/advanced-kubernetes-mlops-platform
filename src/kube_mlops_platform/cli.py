@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from .accelerator_plan import build_accelerator_capacity_plan
 from .artifact_index import render_artifact_index
 from .chaos import run_chaos_drill
 from .cloud_migration import build_cloud_migration_plan
@@ -164,6 +165,11 @@ def demo(output: str | Path) -> dict:
     governance_bundle = build_governance_bundle(root)
     slo_error_budget = build_slo_report(root)
     cloud_migration = build_cloud_migration_plan(root)
+    accelerator_capacity = build_accelerator_capacity_plan(
+        root,
+        project="Kubernetes MLOps Platform",
+        primary_workload="training, release, and batch scoring control plane",
+    )
     artifact_index = render_artifact_index(
         root,
         title="Kubernetes MLOps Platform",
@@ -195,6 +201,7 @@ def demo(output: str | Path) -> dict:
         "governance_bundle": governance_bundle,
         "slo_error_budget": slo_error_budget,
         "cloud_migration": cloud_migration,
+        "accelerator_capacity": accelerator_capacity,
         "artifact_index": str(artifact_index),
         "orchestration_scorecard": orchestration_scorecard,
         "supply_chain": supply_chain,
@@ -226,6 +233,7 @@ def main(argv: list[str] | None = None) -> int:
         "cloud-plan",
         "supply-chain",
         "orchestration-scorecard",
+        "accelerator-plan",
     ]:
         cmd = sub.add_parser(command)
         cmd.add_argument("--output", default=".local")
@@ -274,4 +282,6 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_supply_chain_evidence(args.output, project="Kubernetes MLOps Platform", artifact_name="kubernetes-mlops-demo-artifacts", workflow="Kubernetes MLOps CI", namespace="mlops"), indent=2, sort_keys=True))
     elif args.command == "orchestration-scorecard":
         print(json.dumps(build_orchestration_scorecard(args.output, project="Kubernetes MLOps Platform"), indent=2, sort_keys=True))
+    elif args.command == "accelerator-plan":
+        print(json.dumps(build_accelerator_capacity_plan(args.output, project="Kubernetes MLOps Platform", primary_workload="training, release, and batch scoring control plane"), indent=2, sort_keys=True))
     return 0
