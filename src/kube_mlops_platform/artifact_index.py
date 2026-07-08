@@ -27,6 +27,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Device Allocation", "device_allocation_plan.json", "DRA ResourceClaim templates, Kueue coupling, fallback paths, and device-health guardrails."),
         ("Topology Placement", "topology_placement_plan.json", "Kueue topology-aware placement, serving spread constraints, and topology fallback policy."),
         ("KubeRay Capacity", "kuberay_capacity_plan.json", "Kueue-admitted RayJobs, elastic worker bounds, release-analysis fanout, and fallback policy."),
+        ("Inference Gateway", "inference_gateway_plan.json", "Gateway API Inference Extension pool, endpoint picker fallback, route priority, and canary routing signals."),
         ("Performance Budget", "performance_budget.json", "Latency, training, queueing, artifact-size, and accuracy gates with remediation actions."),
         ("Queue Simulation", "queue_simulation.json", "Kueue quota, Airflow pool, priority, preemption, and pending workload simulation."),
         ("Release Admission", "release_admission_decision.json", "Fail-closed decision record combining SLOs, provenance, queues, governance, and rollout state."),
