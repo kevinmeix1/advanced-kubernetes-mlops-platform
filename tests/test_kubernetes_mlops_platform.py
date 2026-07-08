@@ -14,6 +14,7 @@ from kube_mlops_platform.data import generate_churn_dataset, split_rows
 from kube_mlops_platform.deadline_alerts import build_deadline_alert_plan
 from kube_mlops_platform.disaster_recovery import build_disaster_recovery_plan
 from kube_mlops_platform.device_allocation import build_device_allocation_plan
+from kube_mlops_platform.elastic_workload import build_elastic_workload_plan
 from kube_mlops_platform.gates import evaluate_gates
 from kube_mlops_platform.gitops_release import build_gitops_plan
 from kube_mlops_platform.governance import build_governance_bundle
@@ -313,7 +314,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
 
         for expected in ["actions/upload-artifact@v6", "actions/attest@v4", "attestations: write", "GITHUB_STEP_SUMMARY", "make ci-verify", "concurrency"]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "tenancy_fairness_report.json", "identity_access_report.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "tenancy_fairness_report.json", "identity_access_report.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
 
     def test_accelerator_capacity_plan_and_kubernetes_assets_exist(self) -> None:
@@ -383,6 +384,24 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn(expected, docs)
         for expected in ["submit_kuberay_canary_analysis", "wait_for_kuberay_canary_analysis_deferrable", "rayjob/churn-canary-analysis"]:
             self.assertIn(expected, dag)
+
+    def test_elastic_workload_plan_and_jobset_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        manifest = (repo / "kubernetes" / "kueue-elastic-workloads.yaml").read_text(encoding="utf-8")
+        docs = (repo / "docs" / "kueue-elastic-workloads.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            report = build_elastic_workload_plan(root)
+
+            self.assertTrue(report["passed"])
+            self.assertEqual(report["recommended_action"], "enable_kueue_elastic_release_slices")
+            self.assertEqual(report["feature_gate"], "ElasticJobsViaWorkloadSlices")
+            self.assertTrue(any(item["replacement_for"] for item in report["workload_slices"]))
+            self.assertTrue((root / "reports" / "elastic_workload_plan.json").exists())
+        for expected in ["JobSet", "workload-slice-name", "workload-slice-replacement-for", "ChurnElasticWorkloadSlicePending"]:
+            self.assertIn(expected, manifest)
+        for expected in ["Elastic Workloads", "Workload Slices", "JobSet", "rollback"]:
+            self.assertIn(expected, docs)
 
     def test_inference_gateway_plan_and_kubernetes_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
@@ -495,6 +514,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("semantic_telemetry_contract", names)
             self.assertIn("airflow_deadline_alerts", names)
             self.assertIn("opencost_finops", names)
+            self.assertIn("kueue_elastic_workloads", names)
             self.assertIn("supply_chain_provenance", names)
             self.assertTrue((root / "reports" / "orchestration_scorecard.json").exists())
 
@@ -539,6 +559,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
                 "semantic_telemetry_plan.json",
                 "deadline_alert_plan.json",
                 "cost_observability_report.json",
+                "elastic_workload_plan.json",
                 "tenancy_fairness_report.json",
                 "identity_access_report.json",
                 "performance_budget.json",
@@ -593,6 +614,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue((root / "reports" / "semantic_telemetry_plan.json").exists())
             self.assertTrue((root / "reports" / "deadline_alert_plan.json").exists())
             self.assertTrue((root / "reports" / "cost_observability_report.json").exists())
+            self.assertTrue((root / "reports" / "elastic_workload_plan.json").exists())
             self.assertTrue((root / "reports" / "tenancy_fairness_report.json").exists())
             self.assertTrue((root / "reports" / "identity_access_report.json").exists())
             self.assertTrue((root / "reports" / "performance_budget.json").exists())

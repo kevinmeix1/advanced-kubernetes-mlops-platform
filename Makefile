@@ -1,4 +1,4 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability tenancy-report identity-report performance-budget queue-simulation release-admission ci-verify minikube-up kubernetes-plan test clean
+.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan tenancy-report identity-report performance-budget queue-simulation release-admission ci-verify minikube-up kubernetes-plan test clean
 
 demo:
 	PYTHONPATH=src python3 -m kube_mlops_platform demo --output .local
@@ -87,6 +87,9 @@ deadline-alerts-plan:
 cost-observability:
 	PYTHONPATH=src python3 -m kube_mlops_platform cost-observability --output .local
 
+elastic-workload-plan:
+	PYTHONPATH=src python3 -m kube_mlops_platform elastic-workload-plan --output .local
+
 tenancy-report:
 	PYTHONPATH=src python3 -m kube_mlops_platform tenancy-report --output .local
 
@@ -119,6 +122,7 @@ ci-verify:
 	test -f .local/reports/semantic_telemetry_plan.json
 	test -f .local/reports/deadline_alert_plan.json
 	test -f .local/reports/cost_observability_report.json
+	test -f .local/reports/elastic_workload_plan.json
 	test -f .local/reports/tenancy_fairness_report.json
 	test -f .local/reports/identity_access_report.json
 	test -f .local/reports/performance_budget.json
@@ -138,6 +142,7 @@ ci-verify:
 	python3 -m json.tool .local/reports/semantic_telemetry_plan.json >/dev/null
 	python3 -m json.tool .local/reports/deadline_alert_plan.json >/dev/null
 	python3 -m json.tool .local/reports/cost_observability_report.json >/dev/null
+	python3 -m json.tool .local/reports/elastic_workload_plan.json >/dev/null
 	python3 -m json.tool .local/reports/tenancy_fairness_report.json >/dev/null
 	python3 -m json.tool .local/reports/identity_access_report.json >/dev/null
 	python3 -m json.tool .local/reports/performance_budget.json >/dev/null
@@ -163,6 +168,7 @@ minikube-up:
 	@echo "  kubectl apply -f kubernetes/dynamic-resource-allocation.yaml"
 	@echo "  kubectl apply -f kubernetes/topology-aware-scheduling.yaml"
 	@echo "  kubectl apply -f kubernetes/kuberay-kueue-workloads.yaml"
+	@echo "  kubectl apply -f kubernetes/kueue-elastic-workloads.yaml"
 	@echo "  kubectl apply -f kubernetes/inference-gateway-routing.yaml"
 	@echo "  kubectl apply -f kubernetes/multitenancy-fairness.yaml"
 	@echo "  kubectl apply -f kubernetes/workload-identity.yaml"

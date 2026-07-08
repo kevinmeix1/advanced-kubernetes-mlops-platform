@@ -134,6 +134,8 @@ For Kueue topology-aware placement, topology spread constraints, and rack/zone s
 
 For KubeRay `RayJob` fanout, elastic worker bounds, Kueue admission, and Airflow-controlled release analysis, see [KubeRay and Kueue](docs/kuberay-kueue.md).
 
+For Kueue Workload Slices, JobSet elastic release training, replacement scoring slices, and rollback quota recovery, see [Kueue elastic workloads](docs/kueue-elastic-workloads.md).
+
 For model-aware routing with Gateway API Inference Extension, stable `InferencePool`, Endpoint Picker fallback, and churn scoring priorities, see [Gateway API Inference Extension](docs/inference-gateway.md).
 
 For release, MLflow, KServe, Kubernetes, and SLO telemetry attributes with prediction payload redaction, see [semantic telemetry contract](docs/semantic-telemetry.md).

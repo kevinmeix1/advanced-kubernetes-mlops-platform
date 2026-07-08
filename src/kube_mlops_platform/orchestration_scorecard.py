@@ -59,6 +59,7 @@ def build_orchestration_scorecard(
         ("semantic_telemetry_contract", _present(content, "semantic_telemetry_plan.json", "attributes/semantic_redaction") and _present(content, "ml.model.version", "kserve.inferenceservice.name"), "Release spans preserve portable model, serving, Kubernetes, and SLO attributes with payload redaction"),
         ("airflow_deadline_alerts", _present(content, "deadline_alert_plan.json", "Deadline Alerts") and _present(content, "AIRFLOW__CALLBACKS__CALLBACK_EXECUTION_TIMEOUT"), "Airflow 3 Deadline Alerts cover release queue, candidate registration, canary readiness, and rollback windows"),
         ("opencost_finops", _present(content, "cost_observability_report.json", "OpenCost", "node_gpu_hourly_cost") and _present(content, "MLOpsMonthlyCostBudgetExceeded"), "OpenCost and Prometheus budget alerts attribute serving, training, and canary-analysis spend"),
+        ("kueue_elastic_workloads", _present(content, "elastic_workload_plan.json", "ElasticJobsViaWorkloadSlices") and _present(content, "workload-slice-name", "JobSet"), "Kueue Workload Slices and JobSet support elastic release training, scoring scale-down, and rollback capacity recovery"),
         ("event_driven_scaling", _present(content, "ScaledObject", "ScaledJob"), "KEDA ScaledObjects or ScaledJobs react to operational backlog"),
         ("horizontal_autoscaling", "HorizontalPodAutoscaler" in content, "HPA rules keep workers and services elastic"),
         ("opentelemetry", _present(content, "opentelemetry-collector", "OpenTelemetry"), "OTel collector config captures runtime traces and metrics"),
@@ -89,6 +90,7 @@ def build_orchestration_scorecard(
             "OpenTelemetry semantic conventions for portable service, Kubernetes, release, and model attributes",
             "Airflow 3 Deadline Alerts as the replacement for legacy SLA callbacks",
             "OpenCost exporter metrics for Kubernetes namespace, label, GPU, and workload cost allocation",
+            "Kueue Elastic Workloads with Workload Slices and JobSet integration for dynamic release scale changes",
             "GitHub artifact attestations, SLSA provenance, and Sigstore policy-controller for supply-chain integrity",
         ],
         "next_actions": [
