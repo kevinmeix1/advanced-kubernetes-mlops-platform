@@ -124,6 +124,8 @@ For an automated scan of advanced Airflow, Kubernetes, lineage, scaling, GitOps,
 
 For GPU ResourceFlavors, Dynamic Resource Allocation notes, MIG/time-slicing trade-offs, and accelerator quota planning, see [accelerator scheduling](docs/accelerator-scheduling.md).
 
+For namespace quotas, Kueue cohorts, Airflow tenant pools, chargeback labels, and noisy-neighbor controls, see [multi-tenant fairness](docs/multi-tenant-fairness.md).
+
 For latency, training-runtime, queue-wait, artifact-size, and quality regression gates, see [performance budgets](docs/performance-budgets.md).
 
 For Kueue quota pressure, Airflow pool slots, priority, preemption, and pending workload examples, see [queue capacity simulation](docs/queue-capacity-simulation.md).

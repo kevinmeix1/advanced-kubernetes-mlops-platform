@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mlops-prod
+  labels:
+    platform.mlops.dev/tenant: release-critical
+    platform.mlops.dev/cost-center: ml-platform
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: release-critical-quota
+  namespace: mlops-prod
+spec:
+  hard:
+    requests.cpu: "24"
+    requests.memory: 96Gi
+    pods: "60"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: release-critical-limits
+  namespace: mlops-prod
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 250m
+        memory: 512Mi
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: release-critical-edit
+  namespace: mlops-prod
+subjects:
+  - kind: Group
+    name: ml-platform-release
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tenant-default-deny
+  namespace: mlops-prod
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: Cohort
+metadata:
+  name: mlops-shared-cohort
+spec:
+  fairSharing:
+    weight: 1
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: churn-release-tenant-queue
+spec:
+  cohort: mlops-shared-cohort
+  namespaceSelector:
+    matchLabels:
+      platform.mlops.dev/tenant: release-critical
+  preemption:
+    withinClusterQueue: LowerPriority
+    reclaimWithinCohort: Any
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: cpu-spot
+          resources:
+            - name: cpu
+              nominalQuota: 24
+              borrowingLimit: 8
+            - name: memory
+              nominalQuota: 96Gi
+              borrowingLimit: 24Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-tenant-pools
+  namespace: mlops-prod
+data:
+  pools.json: |
+    {"release-critical": 8, "batch-scoring": 5, "experimentation": 2}

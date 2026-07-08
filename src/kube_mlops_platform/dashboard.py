@@ -40,6 +40,21 @@ def pretty(value: object) -> str:
     return DISPLAY_NAMES.get(text, text.replace("_", " "))
 
 
+def traffic_chips(value: object) -> str:
+    if not isinstance(value, dict):
+        return esc(value)
+    return "".join(f'<span class="chip">{esc(key)} {esc(amount)}%</span>' for key, amount in sorted(value.items()))
+
+
+def short_path(value: object) -> str:
+    text = "" if value is None else str(value)
+    parts = [part for part in text.split("/") if part]
+    display = "/".join(parts[-3:]) if len(parts) > 3 else text
+    if display and display != text:
+        display = f".../{display}"
+    return f'<code title="{esc(text)}">{esc(display)}</code>'
+
+
 def rows(items: list[dict], columns: list[str]) -> str:
     if not items:
         return f"<tr><td colspan='{len(columns)}'>No records</td></tr>"
@@ -149,6 +164,7 @@ def render_dashboard(
         .pass {{ background: #dcfce7; color: #166534; }}
         .fail {{ background: #fee2e2; color: #991b1b; }}
         .traffic {{ color: #0f766e; font-weight: 700; }}
+        .chip {{ display: inline-block; margin: 0 5px 5px 0; padding: 4px 8px; border-radius: 999px; background: #ecfdf5; color: #0f766e; font-size: 12px; font-weight: 800; white-space: nowrap; }}
         .summary-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }}
         .summary-item {{ border: 1px solid #e4e9f0; border-radius: 6px; padding: 12px; min-height: 76px; }}
         .summary-item span {{ display: block; color: #64748b; font-size: 12px; margin-bottom: 8px; }}
@@ -187,7 +203,7 @@ def render_dashboard(
               <div class="table-wrap">
                 <table>
                   <tr><th>Service</th><th>Namespace</th><th>Runtime</th><th>Traffic</th><th>Model URI</th></tr>
-                  <tr><td>{esc(deployment_state.get('service_name'))}</td><td>{esc(deployment_state.get('namespace'))}</td><td>{esc(deployment_state.get('runtime'))}</td><td class="traffic">{esc(deployment_state.get('traffic'))}</td><td><code>{esc(deployment_state.get('model_uri'))}</code></td></tr>
+                  <tr><td>{esc(deployment_state.get('service_name'))}</td><td>{esc(deployment_state.get('namespace'))}</td><td>{esc(deployment_state.get('runtime'))}</td><td class="traffic">{traffic_chips(deployment_state.get('traffic'))}</td><td>{short_path(deployment_state.get('model_uri'))}</td></tr>
                 </table>
               </div>
             </div>

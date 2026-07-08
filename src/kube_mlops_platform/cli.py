@@ -29,6 +29,7 @@ from .resource_optimizer import build_resource_optimization_report
 from .serving import deploy_local_kserve, health, predict
 from .slo import build_slo_report
 from .supply_chain import build_supply_chain_evidence
+from .tenancy import build_tenancy_report
 from .traceability import build_trace_report
 from .validation import validate_dataset
 
@@ -173,6 +174,7 @@ def demo(output: str | Path) -> dict:
         project="Kubernetes MLOps Platform",
         primary_workload="training, release, and batch scoring control plane",
     )
+    tenancy = build_tenancy_report(root)
     performance_budget = build_performance_budget_report(root)
     queue_simulation = build_queue_simulation(root)
     supply_chain = build_supply_chain_evidence(
@@ -208,6 +210,7 @@ def demo(output: str | Path) -> dict:
         "slo_error_budget": slo_error_budget,
         "cloud_migration": cloud_migration,
         "accelerator_capacity": accelerator_capacity,
+        "tenancy": tenancy,
         "performance_budget": performance_budget,
         "queue_simulation": queue_simulation,
         "release_admission": release_admission,
@@ -243,6 +246,7 @@ def main(argv: list[str] | None = None) -> int:
         "supply-chain",
         "orchestration-scorecard",
         "accelerator-plan",
+        "tenancy-report",
         "performance-budget",
         "queue-simulation",
         "release-admission",
@@ -296,6 +300,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_orchestration_scorecard(args.output, project="Kubernetes MLOps Platform"), indent=2, sort_keys=True))
     elif args.command == "accelerator-plan":
         print(json.dumps(build_accelerator_capacity_plan(args.output, project="Kubernetes MLOps Platform", primary_workload="training, release, and batch scoring control plane"), indent=2, sort_keys=True))
+    elif args.command == "tenancy-report":
+        print(json.dumps(build_tenancy_report(args.output), indent=2, sort_keys=True))
     elif args.command == "performance-budget":
         print(json.dumps(build_performance_budget_report(args.output), indent=2, sort_keys=True))
     elif args.command == "queue-simulation":
