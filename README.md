@@ -154,6 +154,8 @@ For KServe LocalModelCache, modelcar OCI artifacts, promotion cache gates, and r
 
 For Airflow 3 GitDagBundle configuration, DAG versioning, scheduler-managed backfills, and incident replay semantics, see [Airflow DAG Bundles](docs/airflow-dag-bundles.md).
 
+For Airflow 3.2 asset partitioning, partition-aware release DAGs, and scheduler-managed partition backfills, see [Airflow asset partitioning](docs/airflow-asset-partitioning.md).
+
 For Airflow 3 AssetWatchers, `BaseEventTrigger` contracts, shared-stream polling, `AssetAlias`, and conditional release asset expressions, see [event-driven assets](docs/event-driven-assets.md).
 
 For Kubernetes pod-level resource envelopes, stable scheduling gates, DRA fit checks, and scheduler-churn metrics, see [pod resource envelopes](docs/pod-resource-envelopes.md).
