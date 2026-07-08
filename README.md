@@ -152,6 +152,8 @@ For Kubernetes pod-level resource envelopes, stable scheduling gates, DRA fit ch
 
 For Kueue Fair Sharing, Admission Fair Sharing, borrowing/lending limits, weighted tenant queues, and preemption guardrails, see [Kueue cohort fair sharing](docs/kueue-cohort-fair-sharing.md).
 
+For Kueue ResourceFlavor fallback, `TryNextFlavor` behavior, and spot/on-demand/GPU trade-offs, see [Kueue flavor fungibility](docs/kueue-flavor-fungibility.md).
+
 For model-aware routing with Gateway API Inference Extension, stable `InferencePool`, Endpoint Picker fallback, and churn scoring priorities, see [Gateway API Inference Extension](docs/inference-gateway.md).
 
 For release, MLflow, KServe, Kubernetes, and SLO telemetry attributes with prediction payload redaction, see [semantic telemetry contract](docs/semantic-telemetry.md).
