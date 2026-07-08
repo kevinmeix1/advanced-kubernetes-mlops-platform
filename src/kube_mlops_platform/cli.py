@@ -30,6 +30,7 @@ from .network_security import build_network_security_report
 from .orchestration_scorecard import build_orchestration_scorecard
 from .policy_audit import audit_platform_policy
 from .performance_budget import build_performance_budget_report
+from .provisioning_admission import build_provisioning_admission_plan
 from .queue_simulator import build_queue_simulation
 from .release_admission import build_release_admission_decision
 from .registry import champion_metadata, promote_candidate, register_candidate, rollback as rollback_model, log_mlflow_run
@@ -193,6 +194,7 @@ def demo(output: str | Path) -> dict:
     cost_observability = build_cost_observability_report(root)
     elastic_workload = build_elastic_workload_plan(root)
     indexed_job_resilience = build_indexed_job_resilience_plan(root)
+    provisioning_admission = build_provisioning_admission_plan(root)
     tenancy = build_tenancy_report(root)
     identity_access = build_identity_access_report(root)
     performance_budget = build_performance_budget_report(root)
@@ -239,6 +241,7 @@ def demo(output: str | Path) -> dict:
         "cost_observability": cost_observability,
         "elastic_workload": elastic_workload,
         "indexed_job_resilience": indexed_job_resilience,
+        "provisioning_admission": provisioning_admission,
         "tenancy": tenancy,
         "identity_access": identity_access,
         "performance_budget": performance_budget,
@@ -285,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
         "cost-observability",
         "elastic-workload-plan",
         "indexed-job-resilience",
+        "provisioning-admission",
         "tenancy-report",
         "identity-report",
         "performance-budget",
@@ -358,6 +362,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_elastic_workload_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "indexed-job-resilience":
         print(json.dumps(build_indexed_job_resilience_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "provisioning-admission":
+        print(json.dumps(build_provisioning_admission_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "tenancy-report":
         print(json.dumps(build_tenancy_report(args.output), indent=2, sort_keys=True))
     elif args.command == "identity-report":

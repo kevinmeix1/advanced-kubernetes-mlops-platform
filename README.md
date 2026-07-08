@@ -138,6 +138,8 @@ For Kueue Workload Slices, JobSet elastic release training, replacement scoring 
 
 For Kubernetes Indexed Jobs, per-index retry budgets, `successPolicy`, `podFailurePolicy`, and Airflow 3 failed-only release recovery, see [indexed job resilience](docs/indexed-job-resilience.md).
 
+For Kueue ProvisioningRequest admission checks, physical autoscaler capacity guarantees, retry backoff, and release freeze semantics, see [provisioning admission](docs/provisioning-admission.md).
+
 For model-aware routing with Gateway API Inference Extension, stable `InferencePool`, Endpoint Picker fallback, and churn scoring priorities, see [Gateway API Inference Extension](docs/inference-gateway.md).
 
 For release, MLflow, KServe, Kubernetes, and SLO telemetry attributes with prediction payload redaction, see [semantic telemetry contract](docs/semantic-telemetry.md).

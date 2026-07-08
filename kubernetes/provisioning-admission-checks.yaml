@@ -1,0 +1,248 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: churn-provisioning-admission-runbook
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    platform.openai.com/component: provisioning-admission
+data:
+  admissionFlow: "quota reservation -> ProvisioningRequest -> Cluster Autoscaler capacity signal -> release wave admission"
+  promotionPolicy: "Failed provisioning freezes candidate promotion and preserves the champion registry alias."
+  fallbackPolicy: "Retry twice, then route smaller validation waves to churn-release-queue while rollback smoke stays protected."
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  name: cpu-release-provisioned
+spec:
+  nodeLabels:
+    workload-class: release
+    capacity.mlops.dev/provisioned: "true"
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  name: gpu-l4-release-provisioned
+spec:
+  nodeLabels:
+    accelerator: nvidia-l4
+    workload-class: release
+    capacity.mlops.dev/provisioned: "true"
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: churn-release-provisioned-queue
+spec:
+  namespaceSelector: {}
+  queueingStrategy: BestEffortFIFO
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: cpu-release-provisioned
+          resources:
+            - name: cpu
+              nominalQuota: 64
+              borrowingLimit: 16
+            - name: memory
+              nominalQuota: 256Gi
+              borrowingLimit: 64Gi
+  admissionChecksStrategy:
+    admissionChecks:
+      - name: churn-release-provisioning-capacity
+        onFlavors: ["cpu-release-provisioned"]
+  preemption:
+    withinClusterQueue: LowerPriority
+    reclaimWithinCohort: Any
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: churn-gpu-provisioned-queue
+spec:
+  namespaceSelector: {}
+  queueingStrategy: BestEffortFIFO
+  resourceGroups:
+    - coveredResources: ["cpu", "memory", "nvidia.com/gpu"]
+      flavors:
+        - name: gpu-l4-release-provisioned
+          resources:
+            - name: cpu
+              nominalQuota: 32
+            - name: memory
+              nominalQuota: 128Gi
+            - name: nvidia.com/gpu
+              nominalQuota: 4
+  admissionChecksStrategy:
+    admissionChecks:
+      - name: churn-release-provisioning-capacity
+        onFlavors: ["gpu-l4-release-provisioned"]
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: churn-release-provisioned-queue
+  namespace: mlops
+spec:
+  clusterQueue: churn-release-provisioned-queue
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: churn-gpu-provisioned-queue
+  namespace: mlops
+spec:
+  clusterQueue: churn-gpu-provisioned-queue
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: AdmissionCheck
+metadata:
+  name: churn-release-provisioning-capacity
+spec:
+  controllerName: kueue.x-k8s.io/provisioning-request
+  parameters:
+    apiGroup: kueue.x-k8s.io
+    kind: ProvisioningRequestConfig
+    name: churn-release-provisioning-config
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ProvisioningRequestConfig
+metadata:
+  name: churn-release-provisioning-config
+spec:
+  provisioningClassName: check-capacity.autoscaling.x-k8s.io
+  managedResources:
+    - cpu
+    - memory
+    - nvidia.com/gpu
+  retryStrategy:
+    backoffLimitCount: 2
+    backoffBaseSeconds: 60
+    backoffMaxSeconds: 1800
+  podSetMergePolicy: IdenticalWorkloadSchedulingRequirements
+  podSetUpdates:
+    nodeSelector:
+      - key: autoscaling.cloud-provider.com/provisioning-request
+        valueFromProvisioningClassDetail: RequestKey
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: churn-release-provisioned-
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: provisioned-release-wave
+    kueue.x-k8s.io/queue-name: churn-release-provisioned-queue
+    kueue.x-k8s.io/priority-class: release-critical
+  annotations:
+    provreq.kueue.x-k8s.io/maxRunDurationSeconds: "3600"
+    provreq.kueue.x-k8s.io/ValidUntilSeconds: "900"
+spec:
+  parallelism: 6
+  completions: 12
+  completionMode: Indexed
+  backoffLimitPerIndex: 1
+  maxFailedIndexes: 2
+  template:
+    spec:
+      serviceAccountName: airflow-release-runner
+      restartPolicy: Never
+      containers:
+        - name: release-shard
+          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:latest
+          command: ["python", "-m", "kube_mlops_platform", "evaluate", "--output", "/workspace"]
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: churn-gpu-canary-analysis-
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: provisioned-gpu-canary-analysis
+    kueue.x-k8s.io/queue-name: churn-gpu-provisioned-queue
+    kueue.x-k8s.io/priority-class: release-critical
+  annotations:
+    provreq.kueue.x-k8s.io/maxRunDurationSeconds: "5400"
+    provreq.kueue.x-k8s.io/ValidUntilSeconds: "1200"
+spec:
+  parallelism: 2
+  completions: 4
+  completionMode: Indexed
+  template:
+    spec:
+      serviceAccountName: airflow-release-runner
+      restartPolicy: Never
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: canary-analysis
+          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:latest
+          command: ["python", "-m", "kube_mlops_platform", "monitor", "--output", "/workspace"]
+          resources:
+            requests:
+              cpu: "4"
+              memory: 8Gi
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "8"
+              memory: 16Gi
+              nvidia.com/gpu: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: churn-provisioning-admission-alerts
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    prometheus: platform
+spec:
+  groups:
+    - name: mlops.provisioning-admission
+      rules:
+        - alert: MLOpsProvisioningAdmissionPendingTooLong
+          expr: max_over_time(kueue_admission_check_state{namespace="mlops",admission_check="churn-release-provisioning-capacity",state="Pending"}[20m]) > 0
+          for: 20m
+          labels:
+            severity: warning
+          annotations:
+            summary: Churn release ProvisioningRequest is pending beyond the release SLO.
+            runbook: "Freeze candidate promotion, inspect ProvisioningRequest status, and protect rollback smoke capacity."
+        - alert: MLOpsProvisioningRequestRetriesExhausted
+          expr: increase(kueue_provisioning_request_retries_total{namespace="mlops",admission_check="churn-release-provisioning-capacity"}[30m]) >= 2
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Churn release ProvisioningRequest exhausted retry budget.
+            runbook: "Release quota, retry smaller validation waves, and keep the champion alias active."
+        - alert: MLOpsProvisioningBookingExpired
+          expr: kueue_provisioning_request_condition{namespace="mlops",condition="BookingExpired",status="true"} > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Provisioned release capacity booking expired before the release wave consumed it.
+            runbook: "Run rollback smoke first, then resume candidate release evidence generation."
