@@ -28,6 +28,7 @@ from kube_mlops_platform.queue_simulator import build_queue_simulation
 from kube_mlops_platform.release_admission import build_release_admission_decision, evaluate_release_admission
 from kube_mlops_platform.registry import rollback
 from kube_mlops_platform.resource_optimizer import build_resource_optimization_report
+from kube_mlops_platform.semantic_telemetry import build_semantic_telemetry_plan
 from kube_mlops_platform.serving import health
 from kube_mlops_platform.slo import build_slo_report
 from kube_mlops_platform.supply_chain import build_supply_chain_evidence
@@ -172,8 +173,12 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual(trace["span_count"], 5)
             self.assertEqual(trace["root_service"], "airflow")
             self.assertTrue(any(span["service"] == "kserve" for span in trace["spans"]))
+            release_attrs = trace["spans"][0]["attributes"]
+            self.assertEqual(release_attrs["airflow.dag_id"], "enterprise_kubernetes_mlops_release")
+            self.assertTrue(any(span["attributes"].get("kserve.inferenceservice.name") == "churn-risk" for span in trace["spans"]))
+            self.assertTrue(any(span["attributes"].get("ml.model.version") == "2026.07.0" for span in trace["spans"]))
             self.assertTrue((Path(tmp) / "reports" / "trace_report.json").exists())
-        for expected in ["kind: ConfigMap", "otlp", "k8sattributes", "memory_limiter", "prometheus", "batch"]:
+        for expected in ["kind: ConfigMap", "otlp", "k8sattributes", "memory_limiter", "attributes/semantic_redaction", "prediction.request.features", "customer.id", "prometheus", "batch"]:
             self.assertIn(expected, collector)
 
     def test_chaos_drill_and_chaos_mesh_assets_exist(self) -> None:
@@ -306,7 +311,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
 
         for expected in ["actions/upload-artifact@v6", "actions/attest@v4", "attestations: write", "GITHUB_STEP_SUMMARY", "make ci-verify", "concurrency"]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "tenancy_fairness_report.json", "identity_access_report.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "tenancy_fairness_report.json", "identity_access_report.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
 
     def test_accelerator_capacity_plan_and_kubernetes_assets_exist(self) -> None:
@@ -394,6 +399,24 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["Gateway API Inference Extension", "InferencePool", "Endpoint Picker", "InferenceObjective"]:
             self.assertIn(expected, docs)
 
+    def test_semantic_telemetry_plan_and_collector_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        collector = (repo / "kubernetes" / "opentelemetry-collector.yaml").read_text(encoding="utf-8")
+        docs = (repo / "docs" / "semantic-telemetry.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            report = build_semantic_telemetry_plan(root)
+
+            self.assertTrue(report["passed"])
+            self.assertEqual(report["recommended_action"], "enforce_release_telemetry_contract")
+            self.assertIn("kserve.inferenceservice.name", report["schema"]["required_attributes"])
+            self.assertIn("prediction.request.features", report["schema"]["redacted_attributes"])
+            self.assertTrue((root / "reports" / "semantic_telemetry_plan.json").exists())
+        for expected in ["attributes/semantic_redaction", "telemetry.contract.name", "prediction.response.score", "customer.id"]:
+            self.assertIn(expected, collector)
+        for expected in ["Semantic Telemetry", "MLflow", "KServe", "payload"]:
+            self.assertIn(expected, docs)
+
     def test_tenancy_fairness_report_and_kubernetes_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         manifest = (repo / "kubernetes" / "multitenancy-fairness.yaml").read_text(encoding="utf-8")
@@ -434,6 +457,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertGreaterEqual(scorecard["score"], 90.0)
             self.assertIn("dynamic_task_mapping", names)
             self.assertIn("kueue_admission", names)
+            self.assertIn("semantic_telemetry_contract", names)
             self.assertIn("supply_chain_provenance", names)
             self.assertTrue((root / "reports" / "orchestration_scorecard.json").exists())
 
@@ -475,6 +499,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
                 "topology_placement_plan.json",
                 "kuberay_capacity_plan.json",
                 "inference_gateway_plan.json",
+                "semantic_telemetry_plan.json",
                 "tenancy_fairness_report.json",
                 "identity_access_report.json",
                 "performance_budget.json",
@@ -526,6 +551,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue((root / "reports" / "topology_placement_plan.json").exists())
             self.assertTrue((root / "reports" / "kuberay_capacity_plan.json").exists())
             self.assertTrue((root / "reports" / "inference_gateway_plan.json").exists())
+            self.assertTrue((root / "reports" / "semantic_telemetry_plan.json").exists())
             self.assertTrue((root / "reports" / "tenancy_fairness_report.json").exists())
             self.assertTrue((root / "reports" / "identity_access_report.json").exists())
             self.assertTrue((root / "reports" / "performance_budget.json").exists())
