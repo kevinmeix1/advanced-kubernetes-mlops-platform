@@ -132,6 +132,8 @@ For DRA `DeviceClass`, `ResourceClaimTemplate`, Kueue admission coupling, and ac
 
 For Kubernetes v1.36 DRA `ResourceHealthStatus`, Pod `allocatedResourcesStatus`, `ResourceClaim.status.devices`, and device quarantine, see [DRA resource health status](docs/dra-resource-health-status.md).
 
+For DRA prioritized alternatives, partitionable devices, consumable capacity, and binding-condition readiness, see [DRA advanced device sharing](docs/dra-advanced-device-sharing.md).
+
 For Kueue topology-aware placement, topology spread constraints, and rack/zone scheduling trade-offs, see [topology-aware scheduling](docs/topology-aware-scheduling.md).
 
 For KubeRay `RayJob` fanout, elastic worker bounds, Kueue admission, and Airflow-controlled release analysis, see [KubeRay and Kueue](docs/kuberay-kueue.md).

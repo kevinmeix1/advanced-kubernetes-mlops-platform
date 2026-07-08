@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .accelerator_plan import build_accelerator_capacity_plan
+from .advanced_device_sharing import build_advanced_device_sharing_plan
 from .artifact_index import render_artifact_index
 from .chaos import run_chaos_drill
 from .cloud_migration import build_cloud_migration_plan
@@ -196,6 +197,7 @@ def demo(output: str | Path) -> dict:
     )
     device_allocation = build_device_allocation_plan(root)
     resource_health_status = build_resource_health_status_plan(root)
+    advanced_device_sharing = build_advanced_device_sharing_plan(root)
     topology_placement = build_topology_placement_plan(root)
     kuberay_capacity = build_kuberay_capacity_plan(root)
     inference_gateway = build_inference_gateway_plan(root)
@@ -252,6 +254,7 @@ def demo(output: str | Path) -> dict:
         "accelerator_capacity": accelerator_capacity,
         "device_allocation": device_allocation,
         "resource_health_status": resource_health_status,
+        "advanced_device_sharing": advanced_device_sharing,
         "topology_placement": topology_placement,
         "kuberay_capacity": kuberay_capacity,
         "inference_gateway": inference_gateway,
@@ -308,6 +311,7 @@ def main(argv: list[str] | None = None) -> int:
         "accelerator-plan",
         "device-plan",
         "resource-health-status",
+        "advanced-device-sharing",
         "topology-plan",
         "kuberay-plan",
         "inference-gateway-plan",
@@ -384,6 +388,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_device_allocation_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "resource-health-status":
         print(json.dumps(build_resource_health_status_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "advanced-device-sharing":
+        print(json.dumps(build_advanced_device_sharing_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "topology-plan":
         print(json.dumps(build_topology_placement_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "kuberay-plan":
