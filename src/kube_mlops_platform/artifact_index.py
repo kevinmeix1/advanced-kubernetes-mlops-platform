@@ -38,6 +38,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Model Cache", "model_cache_plan.json", "KServe LocalModel cache, modelcar OCI artifacts, promotion cache gates, and rollback preloading."),
         ("DAG Bundle Versioning", "dag_bundle_versioning_plan.json", "Airflow 3 GitDagBundle versioning, rerun semantics, backfill policy, and incident replay guardrails."),
         ("Event-Driven Assets", "event_driven_assets_plan.json", "Airflow 3 AssetWatchers, BaseEventTrigger contracts, shared-stream polling, and conditional release asset expressions."),
+        ("Pod Resource Envelopes", "pod_resource_envelope_plan.json", "Kubernetes pod-level resources, scheduling gates, DRA fit checks, and scheduler-churn observability."),
         ("Performance Budget", "performance_budget.json", "Latency, training, queueing, artifact-size, and accuracy gates with remediation actions."),
         ("Queue Simulation", "queue_simulation.json", "Kueue quota, Airflow pool, priority, preemption, and pending workload simulation."),
         ("Release Admission", "release_admission_decision.json", "Fail-closed decision record combining SLOs, provenance, queues, governance, and rollout state."),

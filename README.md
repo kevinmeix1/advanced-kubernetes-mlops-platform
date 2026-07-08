@@ -148,6 +148,8 @@ For Airflow 3 GitDagBundle configuration, DAG versioning, scheduler-managed back
 
 For Airflow 3 AssetWatchers, `BaseEventTrigger` contracts, shared-stream polling, `AssetAlias`, and conditional release asset expressions, see [event-driven assets](docs/event-driven-assets.md).
 
+For Kubernetes pod-level resource envelopes, stable scheduling gates, DRA fit checks, and scheduler-churn metrics, see [pod resource envelopes](docs/pod-resource-envelopes.md).
+
 For model-aware routing with Gateway API Inference Extension, stable `InferencePool`, Endpoint Picker fallback, and churn scoring priorities, see [Gateway API Inference Extension](docs/inference-gateway.md).
 
 For release, MLflow, KServe, Kubernetes, and SLO telemetry attributes with prediction payload redaction, see [semantic telemetry contract](docs/semantic-telemetry.md).

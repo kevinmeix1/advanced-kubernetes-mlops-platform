@@ -1,0 +1,126 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: release-validation-controller
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: pod-resource-envelope
+    platform.mlops.dev/gate-owner: release-control
+spec:
+  schedulingGates:
+    - name: mlops.kevinmei.dev/release-evidence-ready
+  resources:
+    requests:
+      cpu: "2"
+      memory: 4Gi
+    limits:
+      cpu: "3"
+      memory: 6Gi
+  restartPolicy: Never
+  containers:
+    - name: release-runner
+      image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
+      command: ["python", "-m", "kube_mlops_platform", "release-admission"]
+      resources:
+        requests:
+          cpu: 1200m
+          memory: 2Gi
+        limits:
+          cpu: "2"
+          memory: 4Gi
+    - name: otel-sidecar
+      image: otel/opentelemetry-collector-contrib:0.136.0
+      args: ["--config=/etc/otel/config.yaml"]
+      resources:
+        requests:
+          cpu: 200m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: churn-canary-analysis
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: pod-resource-envelope
+    platform.mlops.dev/gate-owner: serving-release
+spec:
+  schedulingGates:
+    - name: mlops.kevinmei.dev/model-cache-ready
+    - name: mlops.kevinmei.dev/gateway-route-accepted
+  resources:
+    requests:
+      cpu: "3"
+      memory: 6Gi
+    limits:
+      cpu: "4"
+      memory: 8Gi
+  restartPolicy: Never
+  containers:
+    - name: canary-analyzer
+      image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
+      command: ["python", "-m", "kube_mlops_platform", "monitor"]
+      resources:
+        requests:
+          cpu: "2"
+          memory: 4Gi
+        limits:
+          cpu: "3"
+          memory: 6Gi
+    - name: metrics-exporter
+      image: prom/statsd-exporter:v0.28.0
+      resources:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: batch-scoring-replay
+  namespace: mlops-batch
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: pod-resource-envelope
+    platform.mlops.dev/gate-owner: replay-control
+spec:
+  schedulingGates:
+    - name: mlops.kevinmei.dev/kueue-admitted
+    - name: mlops.kevinmei.dev/replay-window-approved
+  resources:
+    requests:
+      cpu: "4"
+      memory: 8Gi
+    limits:
+      cpu: "6"
+      memory: 12Gi
+  restartPolicy: Never
+  containers:
+    - name: scoring-worker
+      image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
+      command: ["python", "-m", "kube_mlops_platform", "predict"]
+      resources:
+        requests:
+          cpu: "3"
+          memory: 6Gi
+        limits:
+          cpu: "4"
+          memory: 8Gi
+    - name: checkpoint-writer
+      image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
+      command: ["python", "-m", "kube_mlops_platform", "trace-report"]
+      resources:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+        limits:
+          cpu: "1"
+          memory: 1Gi
