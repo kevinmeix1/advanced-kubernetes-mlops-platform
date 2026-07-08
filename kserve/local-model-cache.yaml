@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: churn-risk-model-cache-runbook
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    platform.openai.com/component: model-cache
+data:
+  promotionPolicy: "Candidate promotion requires LocalModelNamespaceCache evidence for candidate and champion artifacts."
+  rollbackPolicy: "Previous champion modelcar stays cached until rollback SLO expires."
+  runbook.md: |
+    Publish model artifacts as OCI modelcars with explicit non-latest tags.
+    Wait for status.copies.available to meet the release threshold before canary traffic advances.
+    Treat ModelDownloadError as a release hold, not a model-quality failure.
+    Preserve pvc://mlflow-models/churn-risk/* as local-cluster and emergency fallback storage URIs.
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: LocalModelNodeGroup
+metadata:
+  name: churn-risk-cache-nodes
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    platform.openai.com/component: model-cache
+spec:
+  storageLimit: 16Gi
+  persistentVolumeSpec:
+    accessModes:
+      - ReadWriteOnce
+    capacity:
+      storage: 16Gi
+    hostPath:
+      path: /var/lib/kserve/localmodels/churn-risk
+      type: DirectoryOrCreate
+    persistentVolumeReclaimPolicy: Delete
+    storageClassName: local-path
+  persistentVolumeClaimSpec:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 16Gi
+    storageClassName: local-path
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: LocalModelNamespaceCache
+metadata:
+  name: churn-risk-candidate-cache
+  namespace: mlops
+  labels:
+    mlops.dev/model: churn-risk
+    mlops.dev/stage: candidate
+spec:
+  sourceModelUri: oci://ghcr.io/kevinmeix1/churn-risk-candidate:2026.07.0
+  modelSize: 312Mi
+  nodeGroups:
+    - churn-risk-cache-nodes
+  serviceAccountName: churn-risk-predictor
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: LocalModelNamespaceCache
+metadata:
+  name: churn-risk-champion-cache
+  namespace: mlops
+  labels:
+    mlops.dev/model: churn-risk
+    mlops.dev/stage: champion
+spec:
+  sourceModelUri: oci://ghcr.io/kevinmeix1/churn-risk-champion:2026.07.0
+  modelSize: 304Mi
+  nodeGroups:
+    - churn-risk-cache-nodes
+  serviceAccountName: churn-risk-predictor
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: LocalModelNamespaceCache
+metadata:
+  name: churn-risk-previous-champion-cache
+  namespace: mlops
+  labels:
+    mlops.dev/model: churn-risk
+    mlops.dev/stage: previous-champion
+spec:
+  sourceModelUri: oci://ghcr.io/kevinmeix1/churn-risk-previous-champion:2026.06.2
+  modelSize: 298Mi
+  nodeGroups:
+    - churn-risk-cache-nodes
+  serviceAccountName: churn-risk-predictor
+---
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: churn-risk-predictor-modelcar
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: inference
+    mlops.dev/model: churn-risk
+    serving.mlops.dev/storage: modelcar
+  annotations:
+    autoscaling.knative.dev/min-scale: "1"
+    autoscaling.knative.dev/max-scale: "5"
+    serving.mlops.dev/cache-gate: LocalModelNamespaceCache
+spec:
+  predictor:
+    serviceAccountName: churn-risk-predictor
+    canaryTrafficPercent: 10
+    model:
+      modelFormat:
+        name: sklearn
+      protocolVersion: v2
+      storageUri: oci://ghcr.io/kevinmeix1/churn-risk-candidate:2026.07.0
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          cpu: "1"
+          memory: "1Gi"
