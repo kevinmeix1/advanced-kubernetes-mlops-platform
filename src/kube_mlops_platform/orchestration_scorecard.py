@@ -76,6 +76,7 @@ def build_orchestration_scorecard(
         ("kueue_cohort_fair_sharing", _present(content, "cohort_fair_sharing_plan.json", "AdmissionFairSharing", "preemptionStrategies") and _present(content, "borrowingLimit", "lendingLimit", "fairSharing"), "Kueue Fair Sharing and Admission Fair Sharing govern cohort borrowing, lending, weights, and preemption"),
         ("kueue_flavor_fungibility", _present(content, "flavor_fungibility_plan.json", "flavorFungibility", "TryNextFlavor") and _present(content, "BorrowingOverPreemption", "ResourceFlavor"), "Kueue ResourceFlavor fallback avoids premature borrowing or preemption across spot, on-demand, and GPU pools"),
         ("kueue_pending_workload_visibility", _present(content, "pending_workload_visibility_plan.json", "VisibilityOnDemand", "pendingworkloads") and _present(content, "kueue_admission_wait_time_seconds", "kueue_cluster_queue_resource_pending"), "Kueue visibility APIs and metrics explain pending release, batch, and experiment workloads"),
+        ("kubernetes_workload_aware_scheduling", _present(content, "workload_aware_scheduling_plan.json", "scheduling.k8s.io/v1alpha2", "kind: PodGroup") and _present(content, "WorkloadWithJob", "completionMode: Indexed", "ResourceClaimTemplate"), "Kubernetes v1.36 Workload and PodGroup APIs prepare release jobs for atomic gang scheduling, topology constraints, DRA ResourceClaims, and workload-aware preemption"),
         ("event_driven_scaling", _present(content, "ScaledObject", "ScaledJob"), "KEDA ScaledObjects or ScaledJobs react to operational backlog"),
         ("horizontal_autoscaling", "HorizontalPodAutoscaler" in content, "HPA rules keep workers and services elastic"),
         ("opentelemetry", _present(content, "opentelemetry-collector", "OpenTelemetry"), "OTel collector config captures runtime traces and metrics"),
@@ -123,6 +124,7 @@ def build_orchestration_scorecard(
             "Kueue Fair Sharing and Admission Fair Sharing for cohort-level and LocalQueue-level scheduling fairness",
             "Kueue FlavorFungibility for ResourceFlavor fallback before borrowing or preempting scarce release capacity",
             "Kueue VisibilityOnDemand and queue metrics for pending workload triage before release gate timeouts",
+            "Kubernetes v1.36 Workload-Aware Scheduling with scheduling.k8s.io/v1alpha2 Workload/PodGroup, WorkloadWithJob, topology constraints, and PodGroup-scoped DRA ResourceClaims",
             "GitHub artifact attestations, SLSA provenance, and Sigstore policy-controller for supply-chain integrity",
         ],
         "next_actions": [

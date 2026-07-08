@@ -1,0 +1,116 @@
+apiVersion: scheduling.k8s.io/v1alpha2
+kind: PodGroup
+metadata:
+  name: release-retraining-pg
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: churn-release-retraining
+    platform.mlops.dev/control: workload-aware-scheduling
+spec:
+  priorityClassName: mlops-release-critical
+  priority: 1000
+  disruptionMode: PodGroup
+  schedulingPolicy:
+    gang:
+      minCount: 4
+  schedulingConstraints:
+    topology:
+      - key: topology.kubernetes.io/rack
+  resourceClaims:
+    - name: shared-release-gpu-claim
+      resourceClaimTemplateName: release-gpu-claim-template
+---
+apiVersion: resource.k8s.io/v1
+kind: ResourceClaimTemplate
+metadata:
+  name: release-gpu-claim-template
+  namespace: mlops
+spec:
+  spec:
+    devices:
+      requests:
+        - name: release-gpu
+          deviceClassName: gpu-a100-mig
+          allocationMode: All
+          count: 1
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: release-retraining-indexed-job
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: churn-release-retraining
+    kueue.x-k8s.io/queue-name: churn-release-queue
+    platform.mlops.dev/workload-aware-scheduling: "candidate"
+  annotations:
+    scheduling.k8s.io/feature-gate: WorkloadWithJob
+    platform.mlops.dev/podgroup: release-retraining-pg
+spec:
+  completionMode: Indexed
+  parallelism: 4
+  completions: 4
+  backoffLimitPerIndex: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: churn-release-retraining
+    spec:
+      restartPolicy: Never
+      priorityClassName: mlops-release-critical
+      resourceClaims:
+        - name: shared-release-gpu-claim
+          resourceClaimTemplateName: release-gpu-claim-template
+      containers:
+        - name: trainer
+          image: ghcr.io/kevinmeix1/churn-trainer@sha256:demo
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: JOB_COMPLETION_INDEX
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+            - name: WORKLOAD_AWARE_SCHEDULING
+              value: "alpha-readiness"
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+---
+apiVersion: scheduling.k8s.io/v1alpha2
+kind: PodGroup
+metadata:
+  name: canary-analysis-pg
+  namespace: mlops
+spec:
+  priorityClassName: mlops-release-critical
+  priority: 900
+  disruptionMode: PodGroup
+  schedulingPolicy:
+    gang:
+      minCount: 5
+  schedulingConstraints:
+    topology:
+      - key: topology.kubernetes.io/zone
+  resourceClaims:
+    - name: canary-analysis-shared-gpu-claim
+      resourceClaimTemplateName: release-gpu-claim-template
+---
+apiVersion: scheduling.k8s.io/v1alpha2
+kind: PodGroup
+metadata:
+  name: rollback-smoke-pg
+  namespace: mlops
+spec:
+  priorityClassName: mlops-release-critical
+  priority: 1100
+  disruptionMode: PodGroup
+  schedulingPolicy:
+    gang:
+      minCount: 3
+  schedulingConstraints:
+    topology:
+      - key: kubernetes.io/hostname

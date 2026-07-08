@@ -178,6 +178,8 @@ For projected service-account tokens, External Secrets, SPIFFE identities, and k
 
 For latency, training-runtime, queue-wait, artifact-size, and quality regression gates, see [performance budgets](docs/performance-budgets.md).
 
+For Kubernetes v1.36 Workload/PodGroup readiness, atomic release gang scheduling, topology constraints, DRA ResourceClaim sharing, and workload-aware preemption, see [workload-aware scheduling](docs/workload-aware-scheduling.md).
+
 For Kueue quota pressure, Airflow pool slots, priority, preemption, and pending workload examples, see [queue capacity simulation](docs/queue-capacity-simulation.md).
 
 For fail-closed promotion decisions that combine SLOs, queue admission, governance, provenance, and rollout state, see [release admission control](docs/release-admission-control.md).
