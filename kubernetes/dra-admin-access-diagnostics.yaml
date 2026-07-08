@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mlops-dra-admin
+  labels:
+    resource.kubernetes.io/admin-access: "true"
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dra-admin-diagnostic-runner
+  namespace: mlops-dra-admin
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: dra-admin-access-claim-manager
+  namespace: mlops-dra-admin
+rules:
+  - apiGroups: ["resource.k8s.io"]
+    resources: ["resourceclaims", "resourceclaimtemplates"]
+    verbs: ["create", "delete", "get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dra-admin-access-claim-manager
+  namespace: mlops-dra-admin
+subjects:
+  - kind: ServiceAccount
+    name: dra-admin-diagnostic-runner
+    namespace: mlops-dra-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dra-admin-access-claim-manager
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: release-status-reader
+  namespace: mlops
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["resource.k8s.io"]
+    resources: ["resourceclaims"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dra-admin-diagnostic-release-reader
+  namespace: mlops
+subjects:
+  - kind: ServiceAccount
+    name: dra-admin-diagnostic-runner
+    namespace: mlops-dra-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-status-reader
+---
+apiVersion: resource.k8s.io/v1
+kind: ResourceClaim
+metadata:
+  name: canary-gpu-admin-health
+  namespace: mlops-dra-admin
+  labels:
+    mlops.io/diagnostic-purpose: admin-access-health
+    mlops.io/target-workload: churn-canary-inference
+  annotations:
+    mlops.io/cleanup-after-minutes: "15"
+    mlops.io/incident-required: "true"
+spec:
+  devices:
+    requests:
+      - name: gpu
+        exactly:
+          deviceClassName: gpu-l4-shared
+          allocationMode: All
+          adminAccess: true
+          selectors:
+            - cel:
+                expression: "device.driver == 'gpu.resource.kubernetes.io'"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dra-admin-access-health-snapshot
+  namespace: mlops-dra-admin
+  labels:
+    mlops.io/component: dra-admin-access-diagnostics
+spec:
+  ttlSecondsAfterFinished: 900
+  template:
+    metadata:
+      labels:
+        mlops.io/component: dra-admin-access-diagnostics
+    spec:
+      serviceAccountName: dra-admin-diagnostic-runner
+      restartPolicy: Never
+      containers:
+        - name: collect-evidence
+          image: ghcr.io/kevinmeix1/mlops-diagnostic-runner:2026.07.08
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--claim=canary-gpu-admin-health"
+            - "--target-namespace=mlops"
+            - "--target-workload=churn-canary-inference"
+            - "--evidence=allocatedResourcesStatus,ResourceClaim.status.devices,driver-xid-code"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: dra-admin-access-diagnostics
+  namespace: mlops-dra-admin
+spec:
+  groups:
+    - name: dra.admin.access
+      rules:
+        - alert: DRAAdminAccessClaimRunningTooLong
+          expr: kube_resourceclaim_created{namespace="mlops-dra-admin"} > 900
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "A privileged DRA AdminAccess ResourceClaim exceeded its cleanup window"
+        - alert: DRAAdminAccessWithoutIncident
+          expr: kube_resourceclaim_labels{namespace="mlops-dra-admin",label_mlops_io_incident_required!="true"} > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "A privileged DRA AdminAccess claim is missing incident linkage"

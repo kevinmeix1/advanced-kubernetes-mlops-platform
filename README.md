@@ -134,6 +134,8 @@ For Kubernetes v1.36 DRA `ResourceHealthStatus`, Pod `allocatedResourcesStatus`,
 
 For DRA prioritized alternatives, partitionable devices, consumable capacity, and binding-condition readiness, see [DRA advanced device sharing](docs/dra-advanced-device-sharing.md).
 
+For Kubernetes v1.36 DRA `AdminAccess` diagnostics with namespace isolation, least-privilege RBAC, and incident-linked cleanup, see [DRA AdminAccess diagnostics](docs/dra-admin-access-diagnostics.md).
+
 For Kueue topology-aware placement, topology spread constraints, and rack/zone scheduling trade-offs, see [topology-aware scheduling](docs/topology-aware-scheduling.md).
 
 For KubeRay `RayJob` fanout, elastic worker bounds, Kueue admission, and Airflow-controlled release analysis, see [KubeRay and Kueue](docs/kuberay-kueue.md).
