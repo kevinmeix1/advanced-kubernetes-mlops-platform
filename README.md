@@ -140,6 +140,8 @@ For Kubernetes Indexed Jobs, per-index retry budgets, `successPolicy`, `podFailu
 
 For Kueue ProvisioningRequest admission checks, physical autoscaler capacity guarantees, retry backoff, and release freeze semantics, see [provisioning admission](docs/provisioning-admission.md).
 
+For Kueue MultiKueue manager-to-worker release dispatch, worker status sync, candidate freeze semantics, and rollback-smoke protection, see [MultiKueue dispatch](docs/multikueue-dispatch.md).
+
 For model-aware routing with Gateway API Inference Extension, stable `InferencePool`, Endpoint Picker fallback, and churn scoring priorities, see [Gateway API Inference Extension](docs/inference-gateway.md).
 
 For release, MLflow, KServe, Kubernetes, and SLO telemetry attributes with prediction payload redaction, see [semantic telemetry contract](docs/semantic-telemetry.md).

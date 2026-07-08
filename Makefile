@@ -1,4 +1,4 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission tenancy-report identity-report performance-budget queue-simulation release-admission ci-verify minikube-up kubernetes-plan test clean
+.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch tenancy-report identity-report performance-budget queue-simulation release-admission ci-verify minikube-up kubernetes-plan test clean
 
 demo:
 	PYTHONPATH=src python3 -m kube_mlops_platform demo --output .local
@@ -96,6 +96,9 @@ indexed-job-resilience:
 provisioning-admission:
 	PYTHONPATH=src python3 -m kube_mlops_platform provisioning-admission --output .local
 
+multikueue-dispatch:
+	PYTHONPATH=src python3 -m kube_mlops_platform multikueue-dispatch --output .local
+
 tenancy-report:
 	PYTHONPATH=src python3 -m kube_mlops_platform tenancy-report --output .local
 
@@ -131,6 +134,7 @@ ci-verify:
 	test -f .local/reports/elastic_workload_plan.json
 	test -f .local/reports/indexed_job_resilience_plan.json
 	test -f .local/reports/provisioning_admission_plan.json
+	test -f .local/reports/multikueue_dispatch_plan.json
 	test -f .local/reports/tenancy_fairness_report.json
 	test -f .local/reports/identity_access_report.json
 	test -f .local/reports/performance_budget.json
@@ -153,6 +157,7 @@ ci-verify:
 	python3 -m json.tool .local/reports/elastic_workload_plan.json >/dev/null
 	python3 -m json.tool .local/reports/indexed_job_resilience_plan.json >/dev/null
 	python3 -m json.tool .local/reports/provisioning_admission_plan.json >/dev/null
+	python3 -m json.tool .local/reports/multikueue_dispatch_plan.json >/dev/null
 	python3 -m json.tool .local/reports/tenancy_fairness_report.json >/dev/null
 	python3 -m json.tool .local/reports/identity_access_report.json >/dev/null
 	python3 -m json.tool .local/reports/performance_budget.json >/dev/null
@@ -181,6 +186,7 @@ minikube-up:
 	@echo "  kubectl apply -f kubernetes/kueue-elastic-workloads.yaml"
 	@echo "  kubectl apply -f kubernetes/indexed-job-resilience.yaml"
 	@echo "  kubectl apply -f kubernetes/provisioning-admission-checks.yaml"
+	@echo "  kubectl apply -f kubernetes/multikueue-dispatch.yaml"
 	@echo "  kubectl apply -f kubernetes/inference-gateway-routing.yaml"
 	@echo "  kubectl apply -f kubernetes/multitenancy-fairness.yaml"
 	@echo "  kubectl apply -f kubernetes/workload-identity.yaml"

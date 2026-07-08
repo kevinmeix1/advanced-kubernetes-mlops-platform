@@ -24,6 +24,7 @@ from kube_mlops_platform.inference_gateway import build_inference_gateway_plan
 from kube_mlops_platform.io import read_csv, read_json, read_jsonl, write_json
 from kube_mlops_platform.kuberay_capacity import build_kuberay_capacity_plan
 from kube_mlops_platform.model import predict_score, train_model
+from kube_mlops_platform.multikueue_dispatch import build_multikueue_dispatch_plan
 from kube_mlops_platform.network_security import build_network_security_report
 from kube_mlops_platform.orchestration_scorecard import build_orchestration_scorecard
 from kube_mlops_platform.policy_audit import audit_platform_policy
@@ -316,7 +317,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
 
         for expected in ["actions/upload-artifact@v6", "actions/attest@v4", "attestations: write", "GITHUB_STEP_SUMMARY", "make ci-verify", "concurrency"]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "tenancy_fairness_report.json", "identity_access_report.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "tenancy_fairness_report.json", "identity_access_report.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
 
     def test_accelerator_capacity_plan_and_kubernetes_assets_exist(self) -> None:
@@ -442,6 +443,27 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["Kueue Provisioning Admission", "ProvisioningRequest", "Cluster Autoscaler", "release"]:
             self.assertIn(expected, docs)
 
+    def test_multikueue_dispatch_plan_and_kubernetes_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        manifest = (repo / "kubernetes" / "multikueue-dispatch.yaml").read_text(encoding="utf-8")
+        docs = (repo / "docs" / "multikueue-dispatch.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            report = build_multikueue_dispatch_plan(root)
+
+            self.assertTrue(report["passed"])
+            self.assertEqual(report["recommended_action"], "enable_multikueue_release_dispatch")
+            self.assertTrue(report["release_policy"]["promotion_requires_dispatch_evidence"])
+            self.assertEqual(report["dispatch_policy"]["controller_name"], "kueue.x-k8s.io/multikueue")
+            self.assertIn("status.clusterName", report["dispatch_policy"]["status_fields"])
+            self.assertEqual(report["manager_quota"]["nvidia_com_gpu"], 6)
+            self.assertTrue(any(check["name"] == "release_gates_wait_for_dispatch" for check in report["checks"]))
+            self.assertTrue((root / "reports" / "multikueue_dispatch_plan.json").exists())
+        for expected in ["MultiKueueConfig", "MultiKueueCluster", "kueue.x-k8s.io/multikueue", "admissionChecksStrategy", "promotionPolicy", "kueue.x-k8s.io/prebuilt-workload-name", "MLOpsMultiKueueDispatchStalled"]:
+            self.assertIn(expected, manifest)
+        for expected in ["MultiKueue Dispatch", "candidate", "status.clusterName", "champion"]:
+            self.assertIn(expected, docs)
+
     def test_inference_gateway_plan_and_kubernetes_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         manifest = (repo / "kubernetes" / "inference-gateway-routing.yaml").read_text(encoding="utf-8")
@@ -556,6 +578,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("kueue_elastic_workloads", names)
             self.assertIn("indexed_job_resilience", names)
             self.assertIn("provisioning_admission_checks", names)
+            self.assertIn("multikueue_dispatch", names)
             self.assertIn("supply_chain_provenance", names)
             self.assertTrue((root / "reports" / "orchestration_scorecard.json").exists())
 
@@ -603,6 +626,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
                 "elastic_workload_plan.json",
                 "indexed_job_resilience_plan.json",
                 "provisioning_admission_plan.json",
+                "multikueue_dispatch_plan.json",
                 "tenancy_fairness_report.json",
                 "identity_access_report.json",
                 "performance_budget.json",
@@ -659,6 +683,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue((root / "reports" / "cost_observability_report.json").exists())
             self.assertTrue((root / "reports" / "elastic_workload_plan.json").exists())
             self.assertTrue((root / "reports" / "indexed_job_resilience_plan.json").exists())
+            self.assertTrue((root / "reports" / "multikueue_dispatch_plan.json").exists())
             self.assertTrue((root / "reports" / "tenancy_fairness_report.json").exists())
             self.assertTrue((root / "reports" / "identity_access_report.json").exists())
             self.assertTrue((root / "reports" / "performance_budget.json").exists())

@@ -26,6 +26,7 @@ from .io import read_csv, read_json, write_csv, write_json
 from .kuberay_capacity import build_kuberay_capacity_plan
 from .model import evaluate_model, train_model
 from .monitoring import build_monitoring_report
+from .multikueue_dispatch import build_multikueue_dispatch_plan
 from .network_security import build_network_security_report
 from .orchestration_scorecard import build_orchestration_scorecard
 from .policy_audit import audit_platform_policy
@@ -195,6 +196,7 @@ def demo(output: str | Path) -> dict:
     elastic_workload = build_elastic_workload_plan(root)
     indexed_job_resilience = build_indexed_job_resilience_plan(root)
     provisioning_admission = build_provisioning_admission_plan(root)
+    multikueue_dispatch = build_multikueue_dispatch_plan(root)
     tenancy = build_tenancy_report(root)
     identity_access = build_identity_access_report(root)
     performance_budget = build_performance_budget_report(root)
@@ -242,6 +244,7 @@ def demo(output: str | Path) -> dict:
         "elastic_workload": elastic_workload,
         "indexed_job_resilience": indexed_job_resilience,
         "provisioning_admission": provisioning_admission,
+        "multikueue_dispatch": multikueue_dispatch,
         "tenancy": tenancy,
         "identity_access": identity_access,
         "performance_budget": performance_budget,
@@ -289,6 +292,7 @@ def main(argv: list[str] | None = None) -> int:
         "elastic-workload-plan",
         "indexed-job-resilience",
         "provisioning-admission",
+        "multikueue-dispatch",
         "tenancy-report",
         "identity-report",
         "performance-budget",
@@ -364,6 +368,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_indexed_job_resilience_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "provisioning-admission":
         print(json.dumps(build_provisioning_admission_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "multikueue-dispatch":
+        print(json.dumps(build_multikueue_dispatch_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "tenancy-report":
         print(json.dumps(build_tenancy_report(args.output), indent=2, sort_keys=True))
     elif args.command == "identity-report":

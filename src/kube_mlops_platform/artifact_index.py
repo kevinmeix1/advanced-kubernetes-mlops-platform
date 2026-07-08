@@ -34,6 +34,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Elastic Workloads", "elastic_workload_plan.json", "Kueue Workload Slices, JobSet elastic release training, replacement scoring slices, and rollback quota recovery."),
         ("Indexed Job Resilience", "indexed_job_resilience_plan.json", "Kubernetes Indexed Jobs, per-index retries, success policy, pod failure policy, and bounded Airflow release backfills."),
         ("Provisioning Admission", "provisioning_admission_plan.json", "Kueue ProvisioningRequest capacity checks for release training, scoring, canary analysis, and rollback smoke."),
+        ("MultiKueue Dispatch", "multikueue_dispatch_plan.json", "Kueue MultiKueue release dispatch, worker status sync, candidate freeze, and rollback-smoke protection."),
         ("Performance Budget", "performance_budget.json", "Latency, training, queueing, artifact-size, and accuracy gates with remediation actions."),
         ("Queue Simulation", "queue_simulation.json", "Kueue quota, Airflow pool, priority, preemption, and pending workload simulation."),
         ("Release Admission", "release_admission_decision.json", "Fail-closed decision record combining SLOs, provenance, queues, governance, and rollout state."),
