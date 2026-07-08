@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inplace-pod-resize-runbook
+  namespace: mlops
+data:
+  canary-cpu-resize.sh: |
+    kubectl patch pod churn-canary-inference-0 \
+      -n mlops \
+      --subresource resize \
+      --type merge \
+      --patch '{"spec":{"containers":[{"name":"predictor","resources":{"requests":{"cpu":"750m"},"limits":{"cpu":"1000m","memory":"768Mi"}}}]}}'
+  pod-level-ray-resize.sh: |
+    kubectl patch pod release-analysis-ray-worker-0 \
+      -n mlops \
+      --subresource resize \
+      --type merge \
+      --patch '{"spec":{"resources":{"requests":{"memory":"12Gi"},"limits":{"cpu":"8","memory":"16Gi"}}}}'
+  observe-resize-status.sh: |
+    kubectl get pod churn-canary-inference-0 -n mlops -o jsonpath='{.status.conditions[?(@.type=="PodResizePending")].reason}{"\n"}{.status.conditions[?(@.type=="PodResizeInProgress")].reason}{"\n"}{.status.containerStatuses[*].resources}'
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: churn-canary-inference
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: churn-canary-inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: churn-canary-inference
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: churn-canary-inference
+    spec:
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "2"
+          memory: "2Gi"
+      containers:
+        - name: predictor
+          image: ghcr.io/kevinmeix1/churn-risk-predictor:2026.07.08
+          imagePullPolicy: IfNotPresent
+          resizePolicy:
+            - resourceName: cpu
+              restartPolicy: NotRequired
+            - resourceName: memory
+              restartPolicy: RestartContainer
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "768Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: churn-canary-inplace-or-recreate
+  namespace: mlops
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: churn-canary-inference
+  updatePolicy:
+    updateMode: InPlaceOrRecreate
+  resourcePolicy:
+    containerPolicies:
+      - containerName: predictor
+        controlledResources: ["cpu", "memory"]
+        minAllowed:
+          cpu: "250m"
+          memory: "512Mi"
+        maxAllowed:
+          cpu: "2"
+          memory: "2Gi"
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: inplace-pod-resize-release
+  namespace: mlops
+spec:
+  groups:
+    - name: inplace.pod.resize
+      rules:
+        - alert: InPlaceResizePendingTooLong
+          expr: kube_pod_status_condition{namespace="mlops",condition="PodResizePending",status="true"} > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "A release pod resize is pending capacity admission"
+        - alert: InPlaceResizeInProgressTooLong
+          expr: kube_pod_status_condition{namespace="mlops",condition="PodResizeInProgress",status="true"} > 0
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "A release pod resize is admitted but not fully applied to cgroups"

@@ -136,6 +136,8 @@ For DRA prioritized alternatives, partitionable devices, consumable capacity, an
 
 For Kubernetes v1.36 DRA `AdminAccess` diagnostics with namespace isolation, least-privilege RBAC, and incident-linked cleanup, see [DRA AdminAccess diagnostics](docs/dra-admin-access-diagnostics.md).
 
+For Kubernetes v1.35 in-place Pod Resize, v1.36 pod-level resource resizing, resizePolicy choices, and VPA `InPlaceOrRecreate` guardrails, see [in-place Pod resize controls](docs/inplace-pod-resize.md).
+
 For Kueue topology-aware placement, topology spread constraints, and rack/zone scheduling trade-offs, see [topology-aware scheduling](docs/topology-aware-scheduling.md).
 
 For KubeRay `RayJob` fanout, elastic worker bounds, Kueue admission, and Airflow-controlled release analysis, see [KubeRay and Kueue](docs/kuberay-kueue.md).

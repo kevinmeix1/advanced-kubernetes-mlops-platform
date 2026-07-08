@@ -28,6 +28,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Resource Health Status", "resource_health_status_plan.json", "Kubernetes v1.36 DRA device health, Pod allocatedResourcesStatus, ResourceClaim status.devices, and DeviceTaintRule quarantine."),
         ("Advanced Device Sharing", "advanced_device_sharing_plan.json", "DRA prioritized alternatives, partitionable devices, consumable capacity, and binding-condition readiness."),
         ("AdminAccess Diagnostics", "admin_access_diagnostics_plan.json", "Kubernetes v1.36 DRA AdminAccess diagnostics with namespace isolation, RBAC, cleanup, and incident evidence."),
+        ("In-Place Resize", "inplace_resize_plan.json", "Kubernetes in-place Pod resize, pod-level resource resizing, resizePolicy, VPA InPlaceOrRecreate, and resize-status alerts."),
         ("Topology Placement", "topology_placement_plan.json", "Kueue topology-aware placement, serving spread constraints, and topology fallback policy."),
         ("KubeRay Capacity", "kuberay_capacity_plan.json", "Kueue-admitted RayJobs, elastic worker bounds, release-analysis fanout, and fallback policy."),
         ("Inference Gateway", "inference_gateway_plan.json", "Gateway API Inference Extension pool, endpoint picker fallback, route priority, and canary routing signals."),
