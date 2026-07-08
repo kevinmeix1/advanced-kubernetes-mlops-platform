@@ -130,6 +130,8 @@ For GPU ResourceFlavors, Dynamic Resource Allocation notes, MIG/time-slicing tra
 
 For DRA `DeviceClass`, `ResourceClaimTemplate`, Kueue admission coupling, and accelerator fallback policy, see [dynamic resource allocation](docs/dynamic-resource-allocation.md).
 
+For Kubernetes v1.36 DRA `ResourceHealthStatus`, Pod `allocatedResourcesStatus`, `ResourceClaim.status.devices`, and device quarantine, see [DRA resource health status](docs/dra-resource-health-status.md).
+
 For Kueue topology-aware placement, topology spread constraints, and rack/zone scheduling trade-offs, see [topology-aware scheduling](docs/topology-aware-scheduling.md).
 
 For KubeRay `RayJob` fanout, elastic worker bounds, Kueue admission, and Airflow-controlled release analysis, see [KubeRay and Kueue](docs/kuberay-kueue.md).
