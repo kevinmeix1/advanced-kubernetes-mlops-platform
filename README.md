@@ -154,6 +154,8 @@ For Kueue Fair Sharing, Admission Fair Sharing, borrowing/lending limits, weight
 
 For Kueue ResourceFlavor fallback, `TryNextFlavor` behavior, and spot/on-demand/GPU trade-offs, see [Kueue flavor fungibility](docs/kueue-flavor-fungibility.md).
 
+For Kueue pending workload visibility, ClusterQueue/LocalQueue triage endpoints, APF/RBAC setup, and admission-wait alerts, see [Kueue pending workload visibility](docs/kueue-pending-workload-visibility.md).
+
 For model-aware routing with Gateway API Inference Extension, stable `InferencePool`, Endpoint Picker fallback, and churn scoring priorities, see [Gateway API Inference Extension](docs/inference-gateway.md).
 
 For release, MLflow, KServe, Kubernetes, and SLO telemetry attributes with prediction payload redaction, see [semantic telemetry contract](docs/semantic-telemetry.md).

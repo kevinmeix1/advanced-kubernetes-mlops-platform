@@ -69,6 +69,7 @@ def build_orchestration_scorecard(
         ("pod_resource_envelopes", _present(content, "pod_resource_envelope_plan.json", "PodLevelResources", "schedulingGates") and _present(content, "scheduler_pending_pods", "PodSchedulingReadiness"), "Kubernetes pod-level resource envelopes and scheduling gates avoid scheduler churn before release prerequisites are ready"),
         ("kueue_cohort_fair_sharing", _present(content, "cohort_fair_sharing_plan.json", "AdmissionFairSharing", "preemptionStrategies") and _present(content, "borrowingLimit", "lendingLimit", "fairSharing"), "Kueue Fair Sharing and Admission Fair Sharing govern cohort borrowing, lending, weights, and preemption"),
         ("kueue_flavor_fungibility", _present(content, "flavor_fungibility_plan.json", "flavorFungibility", "TryNextFlavor") and _present(content, "BorrowingOverPreemption", "ResourceFlavor"), "Kueue ResourceFlavor fallback avoids premature borrowing or preemption across spot, on-demand, and GPU pools"),
+        ("kueue_pending_workload_visibility", _present(content, "pending_workload_visibility_plan.json", "VisibilityOnDemand", "pendingworkloads") and _present(content, "kueue_admission_wait_time_seconds", "kueue_cluster_queue_resource_pending"), "Kueue visibility APIs and metrics explain pending release, batch, and experiment workloads"),
         ("event_driven_scaling", _present(content, "ScaledObject", "ScaledJob"), "KEDA ScaledObjects or ScaledJobs react to operational backlog"),
         ("horizontal_autoscaling", "HorizontalPodAutoscaler" in content, "HPA rules keep workers and services elastic"),
         ("opentelemetry", _present(content, "opentelemetry-collector", "OpenTelemetry"), "OTel collector config captures runtime traces and metrics"),
@@ -109,6 +110,7 @@ def build_orchestration_scorecard(
             "Kubernetes PodLevelResources and Pod Scheduling Readiness gates for scheduler-efficient release pods",
             "Kueue Fair Sharing and Admission Fair Sharing for cohort-level and LocalQueue-level scheduling fairness",
             "Kueue FlavorFungibility for ResourceFlavor fallback before borrowing or preempting scarce release capacity",
+            "Kueue VisibilityOnDemand and queue metrics for pending workload triage before release gate timeouts",
             "GitHub artifact attestations, SLSA provenance, and Sigstore policy-controller for supply-chain integrity",
         ],
         "next_actions": [
