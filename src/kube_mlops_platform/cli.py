@@ -49,6 +49,7 @@ from .release_admission import build_release_admission_decision
 from .registry import champion_metadata, promote_candidate, register_candidate, rollback as rollback_model, log_mlflow_run
 from .resource_health_status import build_resource_health_status_plan
 from .resource_optimizer import build_resource_optimization_report
+from .runtime_security import build_runtime_security_plan
 from .semantic_telemetry import build_semantic_telemetry_plan
 from .serving import deploy_local_kserve, health, predict
 from .slo import build_slo_report
@@ -229,6 +230,7 @@ def demo(output: str | Path) -> dict:
     performance_budget = build_performance_budget_report(root)
     queue_simulation = build_queue_simulation(root)
     workload_aware_scheduling = build_workload_aware_scheduling_plan(root)
+    runtime_security = build_runtime_security_plan(root)
     supply_chain = build_supply_chain_evidence(
         root,
         project="Kubernetes MLOps Platform",
@@ -291,6 +293,7 @@ def demo(output: str | Path) -> dict:
         "performance_budget": performance_budget,
         "queue_simulation": queue_simulation,
         "workload_aware_scheduling": workload_aware_scheduling,
+        "runtime_security": runtime_security,
         "release_admission": release_admission,
         "artifact_index": str(artifact_index),
         "orchestration_scorecard": orchestration_scorecard,
@@ -353,6 +356,7 @@ def main(argv: list[str] | None = None) -> int:
         "performance-budget",
         "queue-simulation",
         "workload-aware-scheduling",
+        "runtime-security",
         "release-admission",
     ]:
         cmd = sub.add_parser(command)
@@ -462,6 +466,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_queue_simulation(args.output), indent=2, sort_keys=True))
     elif args.command == "workload-aware-scheduling":
         print(json.dumps(build_workload_aware_scheduling_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "runtime-security":
+        print(json.dumps(build_runtime_security_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "release-admission":
         print(json.dumps(build_release_admission_decision(args.output), indent=2, sort_keys=True))
     return 0

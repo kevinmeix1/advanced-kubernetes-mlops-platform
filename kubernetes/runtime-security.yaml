@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: release-telemetry-reader
+  namespace: mlops
+  labels:
+    platform.mlops.dev/control: runtime-security
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mlops-kubelet-fine-grained-reader
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes/metrics
+      - nodes/stats
+      - nodes/pods
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mlops-kubelet-fine-grained-reader
+subjects:
+  - kind: ServiceAccount
+    name: release-telemetry-reader
+    namespace: mlops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mlops-kubelet-fine-grained-reader
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: release-trainer-userns-smoke
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: release-trainer
+    platform.mlops.dev/control: runtime-security
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: release-trainer
+    spec:
+      hostUsers: false
+      serviceAccountName: release-telemetry-reader
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: trainer
+          image: ghcr.io/kevinmeix1/churn-trainer@sha256:demo
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "kube_mlops_platform.runtime_smoke"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: deny-mlops-monitoring-nodes-proxy
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["rbac.authorization.k8s.io"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["clusterroles"]
+  validations:
+    - expression: "!has(object.rules) || object.rules.all(rule, !has(rule.resources) || !('nodes/proxy' in rule.resources))"
+      message: "Use fine-grained kubelet subresources such as nodes/metrics, nodes/stats, or nodes/pods instead of nodes/proxy."
