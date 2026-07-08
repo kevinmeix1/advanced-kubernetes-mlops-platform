@@ -64,6 +64,7 @@ def build_orchestration_scorecard(
         ("provisioning_admission_checks", _present(content, "provisioning_admission_plan.json", "ProvisioningRequestConfig", "kueue.x-k8s.io/provisioning-request") and _present(content, "release_gates_wait_for_capacity", "check-capacity.autoscaling.x-k8s.io"), "Kueue ProvisioningRequest admission confirms physical autoscaler capacity before release gates advance"),
         ("multikueue_dispatch", _present(content, "multikueue_dispatch_plan.json", "MultiKueueConfig", "MultiKueueCluster") and _present(content, "promotionPolicy", "status.clusterName"), "Kueue MultiKueue dispatch covers release worker clusters, candidate freeze semantics, status sync, and rollback-smoke protection"),
         ("kserve_model_cache", _present(content, "model_cache_plan.json", "LocalModelNamespaceCache", "LocalModelNodeGroup") and _present(content, "ModelDownloaded", "promotion_requires_cache_evidence"), "KServe LocalModel cache and modelcar OCI storage gate release promotion and rollback cold-start risk"),
+        ("airflow_dag_bundle_versioning", _present(content, "dag_bundle_versioning_plan.json", "GitDagBundle", "dag_bundle_config_list") and _present(content, "rerun_with_latest_version=False", "rerun_with_latest_version = False"), "Airflow 3 GitDagBundle versioning preserves release DAG code across task retries, reruns, and incident replay"),
         ("event_driven_scaling", _present(content, "ScaledObject", "ScaledJob"), "KEDA ScaledObjects or ScaledJobs react to operational backlog"),
         ("horizontal_autoscaling", "HorizontalPodAutoscaler" in content, "HPA rules keep workers and services elastic"),
         ("opentelemetry", _present(content, "opentelemetry-collector", "OpenTelemetry"), "OTel collector config captures runtime traces and metrics"),
@@ -99,6 +100,7 @@ def build_orchestration_scorecard(
             "Kueue ProvisioningRequest AdmissionChecks for release training, canary analysis, and rollback-smoke capacity guarantees",
             "Kueue MultiKueue for manager-to-worker release dispatch, worker status sync, and promotion freeze semantics",
             "KServe LocalModelCache, LocalModelNodeGroup, and modelcar OCI storage as release cache evidence",
+            "Airflow 3 DAG Bundles and DAG versioning for reproducible release reruns and scheduler-managed backfills",
             "GitHub artifact attestations, SLSA provenance, and Sigstore policy-controller for supply-chain integrity",
         ],
         "next_actions": [

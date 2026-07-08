@@ -12,6 +12,7 @@ from .control_plane import build_release_plan
 from .cost_observability import build_cost_observability_report
 from .dashboard import render_dashboard
 from .data import generate_churn_dataset, split_rows
+from .dag_bundle_versioning import build_dag_bundle_versioning_plan
 from .deadline_alerts import build_deadline_alert_plan
 from .disaster_recovery import build_disaster_recovery_plan
 from .device_allocation import build_device_allocation_plan
@@ -199,6 +200,7 @@ def demo(output: str | Path) -> dict:
     provisioning_admission = build_provisioning_admission_plan(root)
     multikueue_dispatch = build_multikueue_dispatch_plan(root)
     model_cache = build_model_cache_plan(root)
+    dag_bundle_versioning = build_dag_bundle_versioning_plan(root)
     tenancy = build_tenancy_report(root)
     identity_access = build_identity_access_report(root)
     performance_budget = build_performance_budget_report(root)
@@ -248,6 +250,7 @@ def demo(output: str | Path) -> dict:
         "provisioning_admission": provisioning_admission,
         "multikueue_dispatch": multikueue_dispatch,
         "model_cache": model_cache,
+        "dag_bundle_versioning": dag_bundle_versioning,
         "tenancy": tenancy,
         "identity_access": identity_access,
         "performance_budget": performance_budget,
@@ -297,6 +300,7 @@ def main(argv: list[str] | None = None) -> int:
         "provisioning-admission",
         "multikueue-dispatch",
         "model-cache",
+        "dag-bundle-plan",
         "tenancy-report",
         "identity-report",
         "performance-budget",
@@ -376,6 +380,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_multikueue_dispatch_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "model-cache":
         print(json.dumps(build_model_cache_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "dag-bundle-plan":
+        print(json.dumps(build_dag_bundle_versioning_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "tenancy-report":
         print(json.dumps(build_tenancy_report(args.output), indent=2, sort_keys=True))
     elif args.command == "identity-report":

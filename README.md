@@ -144,6 +144,8 @@ For Kueue MultiKueue manager-to-worker release dispatch, worker status sync, can
 
 For KServe LocalModelCache, modelcar OCI artifacts, promotion cache gates, and rollback preloading, see [release model cache](docs/model-cache.md).
 
+For Airflow 3 GitDagBundle configuration, DAG versioning, scheduler-managed backfills, and incident replay semantics, see [Airflow DAG Bundles](docs/airflow-dag-bundles.md).
+
 For model-aware routing with Gateway API Inference Extension, stable `InferencePool`, Endpoint Picker fallback, and churn scoring priorities, see [Gateway API Inference Extension](docs/inference-gateway.md).
 
 For release, MLflow, KServe, Kubernetes, and SLO telemetry attributes with prediction payload redaction, see [semantic telemetry contract](docs/semantic-telemetry.md).

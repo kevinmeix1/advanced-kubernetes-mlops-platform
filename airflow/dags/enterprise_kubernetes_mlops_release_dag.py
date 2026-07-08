@@ -80,6 +80,7 @@ if AIRFLOW_AVAILABLE:
             "on_failure_callback": on_failure_callback,
         },
         tags=["mlops", "kubernetes", "kserve", "mlflow", "asset-aware", "release-gates"],
+        rerun_with_latest_version=False,
     )
     def enterprise_kubernetes_mlops_release():
         start = EmptyOperator(task_id="start_release")
