@@ -124,6 +124,8 @@ For an automated scan of advanced Airflow, Kubernetes, lineage, scaling, GitOps,
 
 For GPU ResourceFlavors, Dynamic Resource Allocation notes, MIG/time-slicing trade-offs, and accelerator quota planning, see [accelerator scheduling](docs/accelerator-scheduling.md).
 
+For latency, training-runtime, queue-wait, artifact-size, and quality regression gates, see [performance budgets](docs/performance-budgets.md).
+
 ## Promotion Gates
 
 Promotion requires every gate to pass:

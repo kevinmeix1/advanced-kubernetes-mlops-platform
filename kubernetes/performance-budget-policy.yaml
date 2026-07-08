@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: churn-risk-performance-budget
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: churn-risk
+    app.kubernetes.io/component: performance-budget
+data:
+  online_inference_p95_ms: "50"
+  online_inference_p99_ms: "120"
+  training_wall_clock_seconds: "120"
+  airflow_queue_wait_p95_seconds: "60"
+  model_artifact_size_mb: "20"
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: churn-risk-performance-budget
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: churn-risk
+    app.kubernetes.io/component: performance-budget
+spec:
+  groups:
+    - name: churn-risk.performance-budget
+      rules:
+        - alert: ChurnRiskP95LatencyBudgetExceeded
+          expr: |
+            histogram_quantile(0.95, sum(rate(kserve_request_duration_seconds_bucket{model="churn-risk"}[5m])) by (le)) * 1000 > 50
+          for: 10m
+          labels:
+            severity: warning
+            owner: serving
+          annotations:
+            summary: Churn-risk p95 inference latency is over budget.
+            runbook_url: docs/performance-budgets.md
+        - alert: ChurnRiskAirflowQueueBudgetExceeded
+          expr: |
+            histogram_quantile(0.95, sum(rate(airflow_task_queued_duration_seconds_bucket{dag_id="enterprise_kubernetes_mlops_release"}[15m])) by (le)) > 60
+          for: 15m
+          labels:
+            severity: warning
+            owner: orchestration
+          annotations:
+            summary: Airflow queue wait p95 is over the release budget.
+            runbook_url: docs/performance-budgets.md
