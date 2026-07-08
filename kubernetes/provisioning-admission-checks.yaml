@@ -151,7 +151,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: release-shard
-          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:latest
+          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
           command: ["python", "-m", "kube_mlops_platform", "evaluate", "--output", "/workspace"]
           resources:
             requests:
@@ -193,7 +193,7 @@ spec:
           effect: "NoSchedule"
       containers:
         - name: canary-analysis
-          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:latest
+          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
           command: ["python", "-m", "kube_mlops_platform", "monitor", "--output", "/workspace"]
           resources:
             requests:

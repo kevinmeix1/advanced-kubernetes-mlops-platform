@@ -32,7 +32,7 @@ spec:
           memory: 128Mi
   containers:
     - name: base
-      image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:latest
+      image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
       command: ["bash", "-lc", "make demo"]
       envFrom:
         - configMapRef:

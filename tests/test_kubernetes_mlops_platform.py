@@ -168,7 +168,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("pod_security_restricted", passed)
             self.assertIn("event_driven_scaling", passed)
             self.assertIn("immutable_image_digest", passed)
-            self.assertIn("no_latest_image_tags", report["failed_checks"])
+            self.assertIn("no_latest_image_tags", passed)
             self.assertTrue((Path(tmp) / "reports" / "policy_audit.json").exists())
 
     def test_trace_report_and_otel_collector_exist(self) -> None:

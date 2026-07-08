@@ -66,7 +66,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: admission-smoke
-          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:latest
+          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
           command: ["bash", "-lc"]
           args:
             - "python -m kube_mlops_platform health"

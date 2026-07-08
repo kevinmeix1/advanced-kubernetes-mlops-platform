@@ -29,7 +29,7 @@ def pod_task(task_id: str, command: list[str], *, pool: str = "ml_platform_pool"
     return KubernetesPodOperator(
         task_id=task_id,
         namespace="mlops",
-        image="ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:latest",
+        image="ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0",
         cmds=["bash", "-lc"],
         arguments=[" ".join(command)],
         service_account_name="churn-risk-predictor",

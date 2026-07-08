@@ -74,7 +74,7 @@ spec:
             fsGroup: 10001
           containers:
             - name: train-evaluate-promote
-              image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:latest
+              image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
               imagePullPolicy: IfNotPresent
               envFrom:
                 - configMapRef:
@@ -112,7 +112,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: backfill
-          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:latest
+          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
           command: ["bash", "-lc"]
           args:
             - "make train && make evaluate"
