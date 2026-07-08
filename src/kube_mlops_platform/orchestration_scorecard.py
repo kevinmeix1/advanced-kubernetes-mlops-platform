@@ -57,6 +57,7 @@ def build_orchestration_scorecard(
         ("kuberay_elastic_jobs", _present(content, "RayJob", "RayCluster") and _present(content, "enableInTreeAutoscaling", "elastic-job"), "KubeRay workloads scale distributed analysis inside Kueue admission"),
         ("inference_gateway_extension", _present(content, "InferencePool", "endpointPickerRef") and _present(content, "InferenceObjective", "inference.networking.k8s.io/v1"), "Gateway API Inference Extension adds model-aware endpoint picking"),
         ("semantic_telemetry_contract", _present(content, "semantic_telemetry_plan.json", "attributes/semantic_redaction") and _present(content, "ml.model.version", "kserve.inferenceservice.name"), "Release spans preserve portable model, serving, Kubernetes, and SLO attributes with payload redaction"),
+        ("airflow_deadline_alerts", _present(content, "deadline_alert_plan.json", "Deadline Alerts") and _present(content, "AIRFLOW__CALLBACKS__CALLBACK_EXECUTION_TIMEOUT"), "Airflow 3 Deadline Alerts cover release queue, candidate registration, canary readiness, and rollback windows"),
         ("event_driven_scaling", _present(content, "ScaledObject", "ScaledJob"), "KEDA ScaledObjects or ScaledJobs react to operational backlog"),
         ("horizontal_autoscaling", "HorizontalPodAutoscaler" in content, "HPA rules keep workers and services elastic"),
         ("opentelemetry", _present(content, "opentelemetry-collector", "OpenTelemetry"), "OTel collector config captures runtime traces and metrics"),
@@ -85,6 +86,7 @@ def build_orchestration_scorecard(
             "KubeRay with Kueue for gang-scheduled and elastic distributed ML workloads",
             "Gateway API Inference Extension for model-aware routing and endpoint picker fallback",
             "OpenTelemetry semantic conventions for portable service, Kubernetes, release, and model attributes",
+            "Airflow 3 Deadline Alerts as the replacement for legacy SLA callbacks",
             "GitHub artifact attestations, SLSA provenance, and Sigstore policy-controller for supply-chain integrity",
         ],
         "next_actions": [

@@ -98,6 +98,8 @@ For the Kubernetes/Airflow robustness layer, see [Kubernetes and Airflow robustn
 
 For the operator-facing release planner, see [advanced control plane layer](docs/control-plane-depth.md).
 
+For Airflow 3 release queue, candidate registration, canary readiness, and rollback Deadline Alerts with bounded callbacks, see [Airflow deadline alerts](docs/airflow-deadline-alerts.md).
+
 For the policy-as-code audit layer, see [security and governance](docs/security-governance.md).
 
 For OpenTelemetry-style runtime traces, see [observability and tracing](docs/observability-tracing.md).

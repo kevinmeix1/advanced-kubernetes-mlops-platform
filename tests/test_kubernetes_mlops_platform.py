@@ -10,6 +10,7 @@ from kube_mlops_platform.cloud_migration import build_cloud_migration_plan
 from kube_mlops_platform.cli import demo, train
 from kube_mlops_platform.control_plane import build_release_plan, evaluate_release_policy
 from kube_mlops_platform.data import generate_churn_dataset, split_rows
+from kube_mlops_platform.deadline_alerts import build_deadline_alert_plan
 from kube_mlops_platform.disaster_recovery import build_disaster_recovery_plan
 from kube_mlops_platform.device_allocation import build_device_allocation_plan
 from kube_mlops_platform.gates import evaluate_gates
@@ -311,7 +312,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
 
         for expected in ["actions/upload-artifact@v6", "actions/attest@v4", "attestations: write", "GITHUB_STEP_SUMMARY", "make ci-verify", "concurrency"]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "tenancy_fairness_report.json", "identity_access_report.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "tenancy_fairness_report.json", "identity_access_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
 
     def test_accelerator_capacity_plan_and_kubernetes_assets_exist(self) -> None:
@@ -417,6 +418,21 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["Semantic Telemetry", "MLflow", "KServe", "payload"]:
             self.assertIn(expected, docs)
 
+    def test_airflow_deadline_alert_plan_and_docs_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        docs = (repo / "docs" / "airflow-deadline-alerts.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            report = build_deadline_alert_plan(root)
+
+            self.assertTrue(report["passed"])
+            self.assertEqual(report["recommended_action"], "enable_airflow3_release_deadline_alerts")
+            self.assertEqual(report["runtime_config"]["AIRFLOW__CALLBACKS__CALLBACK_EXECUTION_TIMEOUT"], "300")
+            self.assertTrue(any(policy["name"] == "canary_readiness" for policy in report["deadline_policies"]))
+            self.assertTrue((root / "reports" / "deadline_alert_plan.json").exists())
+        for expected in ["Deadline Alerts", "legacy Airflow 2 SLA", "MLflow", "rollback"]:
+            self.assertIn(expected, docs)
+
     def test_tenancy_fairness_report_and_kubernetes_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         manifest = (repo / "kubernetes" / "multitenancy-fairness.yaml").read_text(encoding="utf-8")
@@ -458,6 +474,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("dynamic_task_mapping", names)
             self.assertIn("kueue_admission", names)
             self.assertIn("semantic_telemetry_contract", names)
+            self.assertIn("airflow_deadline_alerts", names)
             self.assertIn("supply_chain_provenance", names)
             self.assertTrue((root / "reports" / "orchestration_scorecard.json").exists())
 
@@ -500,6 +517,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
                 "kuberay_capacity_plan.json",
                 "inference_gateway_plan.json",
                 "semantic_telemetry_plan.json",
+                "deadline_alert_plan.json",
                 "tenancy_fairness_report.json",
                 "identity_access_report.json",
                 "performance_budget.json",
@@ -552,6 +570,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue((root / "reports" / "kuberay_capacity_plan.json").exists())
             self.assertTrue((root / "reports" / "inference_gateway_plan.json").exists())
             self.assertTrue((root / "reports" / "semantic_telemetry_plan.json").exists())
+            self.assertTrue((root / "reports" / "deadline_alert_plan.json").exists())
             self.assertTrue((root / "reports" / "tenancy_fairness_report.json").exists())
             self.assertTrue((root / "reports" / "identity_access_report.json").exists())
             self.assertTrue((root / "reports" / "performance_budget.json").exists())
