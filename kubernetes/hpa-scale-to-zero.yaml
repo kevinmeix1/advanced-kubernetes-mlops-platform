@@ -1,0 +1,147 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hpa-scale-to-zero-feature-gate
+  namespace: mlops
+  labels:
+    platform.mlops.dev/control: hpa-scale-to-zero
+data:
+  feature-gate: HPAScaleToZero
+  status: "Kubernetes v1.36 alpha; disabled by default"
+  requirement: "minReplicas: 0 requires autoscaling/v2 plus Object or External metrics"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: batch-scoring-worker-scale-to-zero
+  namespace: mlops
+  annotations:
+    platform.mlops.dev/feature-gate: HPAScaleToZero
+    platform.mlops.dev/cold-start-budget-seconds: "90"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: batch-scoring-worker
+  minReplicas: 0
+  maxReplicas: 24
+  metrics:
+    - type: External
+      external:
+        metric:
+          name: mlops_batch_scoring_queue_depth
+          selector:
+            matchLabels:
+              queue: batch-scoring
+        target:
+          type: Value
+          value: "1"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 400
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+        - type: Pods
+          value: 4
+          periodSeconds: 120
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: drift-replay-runner-scale-to-zero
+  namespace: mlops
+  annotations:
+    platform.mlops.dev/feature-gate: HPAScaleToZero
+    platform.mlops.dev/cold-start-budget-seconds: "120"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: drift-replay-runner
+  minReplicas: 0
+  maxReplicas: 12
+  metrics:
+    - type: External
+      external:
+        metric:
+          name: mlops_drift_replay_pending_partitions
+          selector:
+            matchLabels:
+              workload: drift-replay
+        target:
+          type: Value
+          value: "1"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+    scaleDown:
+      stabilizationWindowSeconds: 900
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: canary-analysis-worker-scale-to-zero
+  namespace: mlops
+  annotations:
+    platform.mlops.dev/feature-gate: HPAScaleToZero
+    platform.mlops.dev/cold-start-budget-seconds: "60"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: canary-analysis-worker
+  minReplicas: 0
+  maxReplicas: 8
+  metrics:
+    - type: Object
+      object:
+        describedObject:
+          apiVersion: v1
+          kind: Service
+          name: canary-analysis-queue
+        metric:
+          name: canary_analysis_backlog
+        target:
+          type: Value
+          value: "1"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+    scaleDown:
+      stabilizationWindowSeconds: 300
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mlops-hpa-scale-to-zero
+  namespace: mlops
+spec:
+  groups:
+    - name: mlops.hpa-scale-to-zero
+      rules:
+        - alert: MLOpsScaleToZeroWakeupFailed
+          expr: max(mlops_batch_scoring_queue_depth) > 0 and max(kube_horizontalpodautoscaler_status_desired_replicas{namespace="mlops", horizontalpodautoscaler=~".*scale-to-zero"}) == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: HPA scale to zero did not wake an elastic ML worker
+        - alert: MLOpsScaleToZeroMetricMissing
+          expr: absent(mlops_batch_scoring_queue_depth) or absent(mlops_drift_replay_pending_partitions)
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: External metric required for HPAScaleToZero is missing
+        - alert: MLOpsScaleToZeroColdStartBudgetExceeded
+          expr: max(mlops_worker_cold_start_seconds{namespace="mlops"}) > 120
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Scale-to-zero cold-start budget exceeded for an ML platform worker

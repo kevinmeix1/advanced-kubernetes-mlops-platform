@@ -186,6 +186,8 @@ For Kubernetes v1.36 controller staleness mitigation, `/statusz`, `/flagz`, PSI 
 
 For Kubernetes v1.36 Memory QoS tiered protection, `memoryReservationPolicy: TieredReservation`, cgroup v2, PSI, and `memory.high` guardrails, see [memory QoS](docs/memory-qos.md).
 
+For Kubernetes v1.36 HPA scale-to-zero, `HPAScaleToZero`, Object/External wake metrics, and cold-start budgets for elastic ML workers, see [HPA scale to zero](docs/hpa-scale-to-zero.md).
+
 For Kueue quota pressure, Airflow pool slots, priority, preemption, and pending workload examples, see [queue capacity simulation](docs/queue-capacity-simulation.md).
 
 For fail-closed promotion decisions that combine SLOs, queue admission, governance, provenance, and rollout state, see [release admission control](docs/release-admission-control.md).

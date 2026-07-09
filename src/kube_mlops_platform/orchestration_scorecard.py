@@ -80,6 +80,7 @@ def build_orchestration_scorecard(
         ("runtime_security_userns_kubelet_authz", _present(content, "runtime_security_plan.json", "hostUsers: false", "KubeletFineGrainedAuthz") and _present(content, "nodes/metrics", "nodes/stats", "ValidatingAdmissionPolicy"), "Kubernetes v1.36 user namespaces and fine-grained kubelet authorization reduce host and kubelet blast radius for release telemetry"),
         ("control_plane_freshness_diagnostics", _present(content, "control_plane_diagnostics_plan.json", "/statusz", "/flagz") and _present(content, "ReleaseControllerCacheStale", "KubeletPSIMemoryStallHigh", "NativeHistogramMetrics"), "Kubernetes v1.36 controller staleness, ComponentStatusz, ComponentFlagz, PSI, and native histogram readiness protect release automation from stale control-plane state"),
         ("memory_qos_tiered_protection", _present(content, "memory_qos_plan.json", "MemoryQoS", "TieredReservation") and _present(content, "memory.high", "memory.low", "MemoryQoSPSIPressureHigh"), "Kubernetes v1.36 Memory QoS tiered protection maps ML workload criticality to cgroup v2 memory.min, memory.low, and memory.high signals"),
+        ("hpa_scale_to_zero_external_metrics", _present(content, "hpa_scale_to_zero_plan.json", "HPAScaleToZero", "minReplicas: 0") and _present(content, "type: External", "type: Object", "MLOpsScaleToZeroWakeupFailed"), "Kubernetes v1.36 HPA scale-to-zero is limited to elastic workers with Object or External wake metrics and explicit cold-start budgets"),
         ("event_driven_scaling", _present(content, "ScaledObject", "ScaledJob"), "KEDA ScaledObjects or ScaledJobs react to operational backlog"),
         ("horizontal_autoscaling", "HorizontalPodAutoscaler" in content, "HPA rules keep workers and services elastic"),
         ("opentelemetry", _present(content, "opentelemetry-collector", "OpenTelemetry"), "OTel collector config captures runtime traces and metrics"),
@@ -131,6 +132,7 @@ def build_orchestration_scorecard(
             "Kubernetes v1.36 user namespaces GA with pod.spec.hostUsers=false and fine-grained kubelet API authorization GA using nodes/metrics, nodes/stats, and nodes/pods instead of nodes/proxy",
             "Kubernetes v1.36 controller staleness mitigation, ComponentStatusz, ComponentFlagz, PSI metrics, and native histogram readiness",
             "Kubernetes v1.36 Memory QoS tiered protection with memoryReservationPolicy=TieredReservation, memory.min, memory.low, memory.high, PSI metrics, and kernel-version guardrails",
+            "Kubernetes v1.36 HPA scale-to-zero for Object or External metrics with HPAScaleToZero feature gate and cold-start guardrails",
             "GitHub artifact attestations, SLSA provenance, and Sigstore policy-controller for supply-chain integrity",
         ],
         "next_actions": [
