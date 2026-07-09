@@ -184,6 +184,8 @@ For Kubernetes v1.36 user namespaces, `hostUsers: false`, fine-grained kubelet a
 
 For Kubernetes v1.36 controller staleness mitigation, `/statusz`, `/flagz`, PSI metrics, and native-histogram readiness, see [control plane diagnostics](docs/control-plane-diagnostics.md).
 
+For Kubernetes v1.36 Memory QoS tiered protection, `memoryReservationPolicy: TieredReservation`, cgroup v2, PSI, and `memory.high` guardrails, see [memory QoS](docs/memory-qos.md).
+
 For Kueue quota pressure, Airflow pool slots, priority, preemption, and pending workload examples, see [queue capacity simulation](docs/queue-capacity-simulation.md).
 
 For fail-closed promotion decisions that combine SLOs, queue admission, governance, provenance, and rollout state, see [release admission control](docs/release-admission-control.md).

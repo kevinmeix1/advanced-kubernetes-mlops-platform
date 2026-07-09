@@ -79,6 +79,7 @@ def build_orchestration_scorecard(
         ("kubernetes_workload_aware_scheduling", _present(content, "workload_aware_scheduling_plan.json", "scheduling.k8s.io/v1alpha2", "kind: PodGroup") and _present(content, "WorkloadWithJob", "completionMode: Indexed", "ResourceClaimTemplate"), "Kubernetes v1.36 Workload and PodGroup APIs prepare release jobs for atomic gang scheduling, topology constraints, DRA ResourceClaims, and workload-aware preemption"),
         ("runtime_security_userns_kubelet_authz", _present(content, "runtime_security_plan.json", "hostUsers: false", "KubeletFineGrainedAuthz") and _present(content, "nodes/metrics", "nodes/stats", "ValidatingAdmissionPolicy"), "Kubernetes v1.36 user namespaces and fine-grained kubelet authorization reduce host and kubelet blast radius for release telemetry"),
         ("control_plane_freshness_diagnostics", _present(content, "control_plane_diagnostics_plan.json", "/statusz", "/flagz") and _present(content, "ReleaseControllerCacheStale", "KubeletPSIMemoryStallHigh", "NativeHistogramMetrics"), "Kubernetes v1.36 controller staleness, ComponentStatusz, ComponentFlagz, PSI, and native histogram readiness protect release automation from stale control-plane state"),
+        ("memory_qos_tiered_protection", _present(content, "memory_qos_plan.json", "MemoryQoS", "TieredReservation") and _present(content, "memory.high", "memory.low", "MemoryQoSPSIPressureHigh"), "Kubernetes v1.36 Memory QoS tiered protection maps ML workload criticality to cgroup v2 memory.min, memory.low, and memory.high signals"),
         ("event_driven_scaling", _present(content, "ScaledObject", "ScaledJob"), "KEDA ScaledObjects or ScaledJobs react to operational backlog"),
         ("horizontal_autoscaling", "HorizontalPodAutoscaler" in content, "HPA rules keep workers and services elastic"),
         ("opentelemetry", _present(content, "opentelemetry-collector", "OpenTelemetry"), "OTel collector config captures runtime traces and metrics"),
@@ -129,6 +130,7 @@ def build_orchestration_scorecard(
             "Kubernetes v1.36 Workload-Aware Scheduling with scheduling.k8s.io/v1alpha2 Workload/PodGroup, WorkloadWithJob, topology constraints, and PodGroup-scoped DRA ResourceClaims",
             "Kubernetes v1.36 user namespaces GA with pod.spec.hostUsers=false and fine-grained kubelet API authorization GA using nodes/metrics, nodes/stats, and nodes/pods instead of nodes/proxy",
             "Kubernetes v1.36 controller staleness mitigation, ComponentStatusz, ComponentFlagz, PSI metrics, and native histogram readiness",
+            "Kubernetes v1.36 Memory QoS tiered protection with memoryReservationPolicy=TieredReservation, memory.min, memory.low, memory.high, PSI metrics, and kernel-version guardrails",
             "GitHub artifact attestations, SLSA provenance, and Sigstore policy-controller for supply-chain integrity",
         ],
         "next_actions": [
