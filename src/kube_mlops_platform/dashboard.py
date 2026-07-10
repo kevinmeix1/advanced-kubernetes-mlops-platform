@@ -251,6 +251,26 @@ def render_dashboard(
         .evidence-card span {{ display: block; color: #64748b; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; }}
         .evidence-card strong {{ display: block; font-size: 15px; line-height: 1.25; margin-bottom: 8px; overflow-wrap: anywhere; }}
         .evidence-card p {{ margin: 0; color: #475569; font-size: 12px; line-height: 1.45; }}
+        .demo-theater {{ border-left: 4px solid #7c3aed; }}
+        .theater-grid {{ display: grid; grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr); gap: 16px; align-items: stretch; }}
+        .theater-stage {{ min-height: 258px; border: 1px solid #dbe3ec; border-radius: 8px; padding: 16px; background: linear-gradient(135deg, #111827, #312e81); color: #fff; display: grid; align-content: space-between; }}
+        .theater-stage span {{ color: #c4b5fd; font-size: 12px; font-weight: 800; text-transform: uppercase; }}
+        .theater-stage strong {{ display: block; margin-top: 8px; font-size: 25px; line-height: 1.15; }}
+        .theater-stage p {{ margin: 12px 0 0; color: #ddd6fe; line-height: 1.45; }}
+        .theater-actions {{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }}
+        .cue {{ border: 1px solid #c4b5fd; border-radius: 6px; padding: 9px 11px; background: #fff; color: #4c1d95; font: inherit; font-size: 12px; font-weight: 900; cursor: pointer; }}
+        .cue.active {{ background: #7c3aed; color: #fff; }}
+        .theater-panel {{ display: grid; gap: 12px; }}
+        .theater-kpis {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid #e4e9f0; border-radius: 8px; overflow: hidden; }}
+        .theater-kpis div {{ min-height: 78px; padding: 12px; background: #f8fafc; border-right: 1px solid #e4e9f0; }}
+        .theater-kpis div:last-child {{ border-right: 0; }}
+        .theater-kpis span {{ display: block; color: #64748b; font-size: 11px; margin-bottom: 7px; }}
+        .theater-kpis strong {{ display: block; font-size: 16px; overflow-wrap: anywhere; }}
+        .theater-progress {{ height: 10px; border-radius: 999px; overflow: hidden; background: #e2e8f0; }}
+        .theater-progress span {{ display: block; height: 100%; width: 25%; background: #7c3aed; transition: width .18s ease; }}
+        .theater-notes {{ margin: 0; color: #475569; line-height: 1.45; }}
+        .theater-links {{ display: flex; flex-wrap: wrap; gap: 8px; }}
+        .theater-links a {{ border: 1px solid #dbe3ec; border-radius: 6px; padding: 8px 10px; color: #1d4ed8; font-size: 12px; font-weight: 800; text-decoration: none; background: #fff; }}
         .summary-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }}
         .summary-item {{ border-top: 1px solid #e4e9f0; padding: 12px 2px; min-height: 70px; }}
         .summary-item span {{ display: block; color: #64748b; font-size: 12px; margin-bottom: 8px; }}
@@ -341,6 +361,9 @@ def render_dashboard(
           .flavor-state {{ text-align: left; }}
           .evidence-head {{ flex-direction: column; }}
           .evidence-grid {{ grid-template-columns: 1fr; }}
+          .theater-grid, .theater-kpis {{ grid-template-columns: 1fr; }}
+          .theater-kpis div {{ border-right: 0; border-bottom: 1px solid #e4e9f0; }}
+          .theater-kpis div:last-child {{ border-bottom: 0; }}
         }}
       </style>
     </head>
@@ -374,6 +397,63 @@ def render_dashboard(
             <div class="evidence-card"><span>Serving operations</span><strong>KServe canary evidence is fail-closed</strong><p>Traffic, SLO burn, feature drift, and provenance all feed the same release decision shown in the interactive canary lab.</p></div>
           </div>
         </section>
+
+        <section class="panel demo-theater" data-testid="demo-theater">
+          <div class="evidence-head">
+            <div>
+              <h2>Judge Demo Theater</h2>
+              <p>A guided portfolio walkthrough with natural neural narration, video assets, and the exact observability signals a reviewer should challenge.</p>
+            </div>
+            <span class="badge neutral">narrated demo</span>
+          </div>
+          <div class="theater-grid">
+            <div class="theater-stage" aria-live="polite">
+              <div><span id="theaterCue">Opening</span><strong id="theaterTitle">Explain the release control plane</strong><p id="theaterBody">Start with the champion alias, gates, and deployment evidence before touching any controls.</p></div>
+              <div class="theater-actions">
+                <button type="button" class="cue active" data-demo-cue="0">Open</button>
+                <button type="button" class="cue" data-demo-cue="1">Operate</button>
+                <button type="button" class="cue" data-demo-cue="2">Recover</button>
+                <button type="button" class="cue" data-demo-cue="3">Scale</button>
+              </div>
+            </div>
+            <div class="theater-panel">
+              <div class="theater-kpis">
+                <div><span>Video</span><strong>H.264 judge walkthrough</strong></div>
+                <div><span>Voice</span><strong>edge-tts neural narration</strong></div>
+                <div><span>Signals</span><strong>gates, SLO, drift, queue</strong></div>
+                <div><span>Evidence</span><strong>screenshots + JSON reports</strong></div>
+              </div>
+              <div class="theater-progress"><span id="theaterProgress"></span></div>
+              <p id="theaterNotes" class="theater-notes">Reviewer path: run <code>make demo</code>, open this dashboard, then play <code>docs/demo/kubernetes-mlops-judge-demo.mp4</code>.</p>
+              <div class="theater-links">
+                <a href="../../docs/demo/kubernetes-mlops-judge-demo.mp4">Watch video</a>
+                <a href="../../docs/judge-demo.md">Demo script</a>
+                <a href="../../docs/demo-narration.txt">Narration text</a>
+                <a href="index.html">Artifact index</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <script>
+          function renderDemoTheater(index) {{
+            const cues = [
+              {{cue: "Opening", title: "Explain the release control plane", body: "Start with the champion alias, gates, and deployment evidence before touching any controls.", notes: "The first judge question is usually whether this is reproducible. Point to make demo, MLflow contract checks, and the artifact index."}},
+              {{cue: "Operate", title: "Tune the canary decision live", body: "Move latency, error rate, queue pressure, and drift controls to show fail-closed promotion logic.", notes: "Narrate that Airflow owns the decision and KServe owns serving state; neither silently bypasses the gate."}},
+              {{cue: "Recover", title: "Prove rollback is more than a button", body: "Use the rollback path, registry aliases, and evidence bundle to show how a bad release is contained.", notes: "Call out idempotency, previous champion preservation, and bounded callback side effects."}},
+              {{cue: "Scale", title: "Connect local proof to Kubernetes", body: "Finish with Kueue admission, resource envelopes, tenancy, and cloud migration notes.", notes: "This is where the project stops being a toy: scheduling, quotas, cost, and observability all have owners."}}
+            ];
+            const item = cues[index] || cues[0];
+            document.getElementById("theaterCue").textContent = item.cue;
+            document.getElementById("theaterTitle").textContent = item.title;
+            document.getElementById("theaterBody").textContent = item.body;
+            document.getElementById("theaterNotes").textContent = item.notes;
+            document.getElementById("theaterProgress").style.width = (((index + 1) / cues.length) * 100) + "%";
+            document.querySelectorAll("[data-demo-cue]").forEach((button) => button.classList.toggle("active", Number(button.dataset.demoCue) === index));
+          }}
+          document.querySelectorAll("[data-demo-cue]").forEach((button) => button.addEventListener("click", () => renderDemoTheater(Number(button.dataset.demoCue))));
+          renderDemoTheater(0);
+        </script>
 
         <section class="panel decision-lab" data-testid="canary-release-lab">
           <div class="decision-heading">

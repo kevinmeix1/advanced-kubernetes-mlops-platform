@@ -8,6 +8,7 @@ SUBTITLES="${4:-.local/demo/kubernetes-mlops-judge-demo.srt}"
 
 screenshots=(
   "dashboard.png"
+  "dashboard-demo-theater.png"
   "dashboard-kserve-canary-readiness.png"
   "dashboard-concurrent-admission.png"
   "dashboard-admission-path-lab.png"
@@ -15,7 +16,7 @@ screenshots=(
   "dashboard-rollback.png"
   "dashboard-mobile.png"
 )
-durations=(34 30 31 36 29 34 28)
+durations=(34 22 30 31 36 29 34 28)
 
 command -v ffmpeg >/dev/null || { echo "ffmpeg is required" >&2; exit 1; }
 test -f "$AUDIO" || { echo "Missing narration: run make demo-voice" >&2; exit 1; }

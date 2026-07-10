@@ -18,6 +18,8 @@ unless the implementation matrix below says they are executed.
 
 ![Judge evidence deck](docs/screenshots/dashboard-evidence-deck.png)
 
+![Judge demo theater](docs/screenshots/dashboard-demo-theater.png)
+
 ## Implementation Status
 
 | Capability | Evidence | Status |
