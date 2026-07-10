@@ -260,6 +260,7 @@ fast path without installing the integration environment.
 - [MLflow registry recovery runbook](docs/mlflow-registry-recovery.md)
 - [Airflow stateful orchestration](docs/airflow-stateful-orchestration.md)
 - [AI workload telemetry readiness](docs/ai-workload-telemetry.md)
+- [Operational readiness review](docs/operational-readiness-review.md)
 - [Kueue Concurrent Admission](docs/kueue-concurrent-admission.md)
 - [Kubernetes and Airflow robustness](docs/kubernetes-airflow-robustness.md)
 - [Release admission control](docs/release-admission-control.md)
