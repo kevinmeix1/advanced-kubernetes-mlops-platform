@@ -6,6 +6,8 @@ The control room starts with the current application champion, offline gate stat
 
 The Canary Release Lab exposes the same policy thresholds emitted by the Python control plane. In the observed state, quality gates pass, latency and Kueue pressure are healthy, and the error budget is untouched. Feature drift still fails, so Airflow must hold the release instead of treating green offline metrics as permission to promote.
 
+The Kubernetes sections are deliberately more than static YAML. The KServe canary readiness view checks server-side apply ownership, rollout status, traffic split evidence, Prometheus analysis, and promotion rollback controls. The concurrent admission view shows how batch training, serving diagnostics, and incident workloads compete for quota without starving the release path. The Kueue Admission Path Lab makes that concrete: a reviewer can switch scenarios and see ClusterQueue flavor selection, fallback, borrowing, preemption, and pending workload visibility in one place.
+
 When the drift scenario becomes healthy, all five controls pass. The decision changes to Advance Canary, and the path from Airflow validation through Kueue quota, KServe health, Prometheus budget, and the final Airflow action turns green. This is a recommendation under an approval operation, not an uncontrolled registry mutation.
 
 Next, a six percent serving error rate produces a twelve-times error-budget burn. That crosses both the rollback burn threshold and the absolute error-rate threshold. Promotion freezes, the Prometheus stage fails, and the controller recommends restoring the previous champion alias.
