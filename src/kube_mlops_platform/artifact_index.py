@@ -56,6 +56,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Memory QoS", "memory_qos_plan.json", "Kubernetes v1.36 MemoryQoS, TieredReservation, cgroup v2, PSI, and memory.high guardrails for ML workloads."),
         ("HPA Scale To Zero", "hpa_scale_to_zero_plan.json", "Kubernetes v1.36 HPAScaleToZero, autoscaling/v2, Object and External metric wakeups, and cold-start guardrails."),
         ("Suspended Job Resources", "suspended_job_resources_plan.json", "Kubernetes v1.36 MutablePodResourcesForSuspendedJobs for queue-time CPU, memory, GPU, and extended-resource right-sizing."),
+        ("Constrained Impersonation", "constrained_impersonation_plan.json", "Kubernetes v1.36 ConstrainedImpersonation for least-privilege release debugging and rollback support."),
         ("Release Admission", "release_admission_decision.json", "Fail-closed decision record combining SLOs, provenance, queues, governance, and rollout state."),
         ("Tenant Fairness", "tenancy_fairness_report.json", "Namespace quotas, Kueue cohorts, Airflow pools, cost labels, and noisy-neighbor controls."),
         ("Workload Identity", "identity_access_report.json", "Projected tokens, External Secrets, SPIFFE IDs, and Airflow task service accounts."),

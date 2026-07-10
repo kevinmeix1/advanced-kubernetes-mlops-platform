@@ -190,6 +190,8 @@ For Kubernetes v1.36 HPA scale-to-zero, `HPAScaleToZero`, Object/External wake m
 
 For Kubernetes v1.36 suspended Job resource mutation, `MutablePodResourcesForSuspendedJobs`, and queue-time CPU/memory/GPU right-sizing before unsuspend, see [suspended Job resources](docs/suspended-job-resources.md).
 
+For Kubernetes v1.36 constrained impersonation, `ConstrainedImpersonation`, and least-privilege release debugging with separate identity and action authorization, see [constrained impersonation](docs/constrained-impersonation.md).
+
 For Kueue quota pressure, Airflow pool slots, priority, preemption, and pending workload examples, see [queue capacity simulation](docs/queue-capacity-simulation.md).
 
 For fail-closed promotion decisions that combine SLOs, queue admission, governance, provenance, and rollout state, see [release admission control](docs/release-admission-control.md).

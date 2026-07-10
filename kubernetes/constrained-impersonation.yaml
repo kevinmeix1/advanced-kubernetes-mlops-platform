@@ -1,0 +1,158 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: release-debugger-impersonate-identity
+  namespace: mlops
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["serviceaccounts"]
+    resourceNames: ["champion-reader"]
+    verbs: ["impersonate:serviceaccount"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rollback-controller-impersonate-identity
+  namespace: mlops
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["serviceaccounts"]
+    resourceNames: ["release-status-writer"]
+    verbs: ["impersonate:serviceaccount"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rollback-controller-impersonate-actions
+  namespace: mlops
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments/status"]
+    verbs:
+      - "impersonate-on:serviceaccount:get"
+      - "impersonate-on:serviceaccount:patch"
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs:
+      - "impersonate-on:serviceaccount:get"
+      - "impersonate-on:serviceaccount:patch"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rollback-controller-impersonate-identity
+  namespace: mlops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rollback-controller-impersonate-identity
+subjects:
+  - kind: ServiceAccount
+    name: rollback-controller
+    namespace: mlops
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rollback-controller-impersonate-actions
+  namespace: mlops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rollback-controller-impersonate-actions
+subjects:
+  - kind: ServiceAccount
+    name: rollback-controller
+    namespace: mlops
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: release-debugger-impersonate-actions
+  namespace: mlops
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments/status"]
+    verbs:
+      - "impersonate-on:serviceaccount:get"
+      - "impersonate-on:serviceaccount:list"
+      - "impersonate-on:serviceaccount:watch"
+  - apiGroups: [""]
+    resources: ["services", "pods/log"]
+    verbs:
+      - "impersonate-on:serviceaccount:get"
+      - "impersonate-on:serviceaccount:list"
+      - "impersonate-on:serviceaccount:watch"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: release-debugger-impersonate-identity
+  namespace: mlops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-debugger-impersonate-identity
+subjects:
+  - kind: ServiceAccount
+    name: release-debugger
+    namespace: mlops
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: release-debugger-impersonate-actions
+  namespace: mlops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: release-debugger-impersonate-actions
+subjects:
+  - kind: ServiceAccount
+    name: release-debugger
+    namespace: mlops
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mlops-constrained-impersonation
+  namespace: mlops
+spec:
+  groups:
+    - name: mlops.constrained-impersonation
+      rules:
+        - alert: MLOpsLegacyImpersonateVerbDetected
+          expr: max(mlops_rbac_legacy_impersonate_grants{namespace="mlops"}) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Legacy broad impersonate verb is present without constrained action grants
+        - alert: MLOpsConstrainedImpersonationAuditMissing
+          expr: max(mlops_impersonation_audit_missing_constraint{namespace="mlops"}) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Impersonated release request is missing authenticationMetadata.impersonationConstraint
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: constrained-impersonation-audit-policy
+  namespace: mlops
+data:
+  audit-policy.yaml: |
+    apiVersion: audit.k8s.io/v1
+    kind: Policy
+    rules:
+      - level: Metadata
+        omitStages:
+          - RequestReceived
+        verbs:
+          - "impersonate:serviceaccount"
+          - "impersonate-on:serviceaccount:get"
+          - "impersonate-on:serviceaccount:patch"
+        resources:
+          - group: "authentication.k8s.io"
+            resources: ["serviceaccounts"]
