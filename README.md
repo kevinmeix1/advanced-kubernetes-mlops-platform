@@ -16,6 +16,8 @@ unless the implementation matrix below says they are executed.
 
 [Watch the narrated judge demo](docs/demo/kubernetes-mlops-judge-demo.mp4) | [Follow the live demo script](docs/judge-demo.md)
 
+![Judge evidence deck](docs/screenshots/dashboard-evidence-deck.png)
+
 ## Implementation Status
 
 | Capability | Evidence | Status |

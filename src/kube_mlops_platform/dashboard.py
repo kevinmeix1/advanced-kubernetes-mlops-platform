@@ -243,6 +243,14 @@ def render_dashboard(
         .neutral {{ background: #e2e8f0; color: #334155; }}
         .traffic {{ color: #0f766e; font-weight: 700; }}
         .chip {{ display: inline-block; margin: 0 5px 5px 0; padding: 4px 8px; border-radius: 999px; background: #ecfdf5; color: #0f766e; font-size: 12px; font-weight: 800; white-space: nowrap; }}
+        .evidence-deck {{ border-left: 4px solid #2563eb; }}
+        .evidence-head {{ display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 14px; }}
+        .evidence-head p {{ margin: 5px 0 0; color: #64748b; font-size: 13px; line-height: 1.45; max-width: 840px; }}
+        .evidence-grid {{ display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }}
+        .evidence-card {{ min-height: 154px; border: 1px solid #e4e9f0; border-radius: 6px; padding: 13px; background: #fbfcfe; }}
+        .evidence-card span {{ display: block; color: #64748b; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; }}
+        .evidence-card strong {{ display: block; font-size: 15px; line-height: 1.25; margin-bottom: 8px; overflow-wrap: anywhere; }}
+        .evidence-card p {{ margin: 0; color: #475569; font-size: 12px; line-height: 1.45; }}
         .summary-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }}
         .summary-item {{ border-top: 1px solid #e4e9f0; padding: 12px 2px; min-height: 70px; }}
         .summary-item span {{ display: block; color: #64748b; font-size: 12px; margin-bottom: 8px; }}
@@ -331,6 +339,8 @@ def render_dashboard(
           .admission-facts div:last-child {{ border-bottom: 0; }}
           .flavor-step {{ grid-template-columns: 1fr; }}
           .flavor-state {{ text-align: left; }}
+          .evidence-head {{ flex-direction: column; }}
+          .evidence-grid {{ grid-template-columns: 1fr; }}
         }}
       </style>
     </head>
@@ -347,6 +357,22 @@ def render_dashboard(
           <div class="metric"><span>MLflow contract</span><strong>{contract_badge(mlflow_contract.get('passed'))}</strong></div>
           <div class="metric"><span>Latency p95</span><strong>{esc(monitoring_report.get('latency_ms', {}).get('p95', 'n/a'))} ms</strong></div>
           <div class="metric"><span>Observed feature drift</span><strong>{badge(monitoring_report.get('feature_drift', {}).get('passed', False))}</strong></div>
+        </section>
+
+        <section class="panel evidence-deck" data-testid="judge-evidence-deck">
+          <div class="evidence-head">
+            <div>
+              <h2>Judge Evidence Deck</h2>
+              <p>Review the control-plane proof in one pass: each card maps a local artifact to the production concern it would own in a Kubernetes deployment.</p>
+            </div>
+            <span class="badge neutral">portfolio review mode</span>
+          </div>
+          <div class="evidence-grid">
+            <div class="evidence-card"><span>Registry safety</span><strong>MLflow alias rollback is exercised</strong><p>Champion version, registry inventory, idempotent promotion, and rollback parity are generated before the release lab can advance.</p></div>
+            <div class="evidence-card"><span>Airflow orchestration</span><strong>Asset partitions gate release slices</strong><p>The DAG contract models setup and teardown, mapped validation work, stateful retries, and partition-aware release decisions.</p></div>
+            <div class="evidence-card"><span>Kubernetes scheduling</span><strong>Kueue admission explains capacity</strong><p>Concurrent admission, flavor assignment, and pending workload evidence show why a canary, replay, or rollback job runs now or waits.</p></div>
+            <div class="evidence-card"><span>Serving operations</span><strong>KServe canary evidence is fail-closed</strong><p>Traffic, SLO burn, feature drift, and provenance all feed the same release decision shown in the interactive canary lab.</p></div>
+          </div>
         </section>
 
         <section class="panel decision-lab" data-testid="canary-release-lab">
