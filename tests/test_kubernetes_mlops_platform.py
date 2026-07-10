@@ -15,6 +15,7 @@ from kube_mlops_platform.cli import demo, train
 from kube_mlops_platform.cohort_fair_sharing import build_cohort_fair_sharing_plan
 from kube_mlops_platform.control_plane import build_release_plan, evaluate_release_policy
 from kube_mlops_platform.control_plane_diagnostics import build_control_plane_diagnostics_plan
+from kube_mlops_platform.concurrent_admission import build_concurrent_admission_plan
 from kube_mlops_platform.constrained_impersonation import build_constrained_impersonation_plan
 from kube_mlops_platform.cost_observability import build_cost_observability_report
 from kube_mlops_platform.data import generate_churn_dataset, split_rows
@@ -347,7 +348,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             "concurrency",
         ]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "scheduling_gate_controller_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "kserve_canary_readiness_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "concurrent_admission_plan.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "scheduling_gate_controller_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "kserve_canary_readiness_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
 
     def test_accelerator_capacity_plan_and_kubernetes_assets_exist(self) -> None:
@@ -1012,6 +1013,49 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["Kueue Flavor Fungibility", "ResourceFlavor", "TryNextFlavor", "BorrowingOverPreemption"]:
             self.assertIn(expected, docs)
 
+    def test_concurrent_admission_plan_and_kubernetes_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        docs = (repo / "docs" / "kueue-concurrent-admission.md").read_text(encoding="utf-8")
+        manifest = (repo / "kubernetes" / "kueue-concurrent-admission.yaml").read_text(
+            encoding="utf-8"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            report = build_concurrent_admission_plan(root)
+            dashboard = (root / "reports" / "mlops_platform_dashboard.html").read_text(
+                encoding="utf-8"
+            )
+            index = (root / "reports" / "index.html").read_text(encoding="utf-8")
+
+            self.assertTrue(result["concurrent_admission"]["passed"])
+            self.assertTrue(report["passed"])
+            self.assertEqual(
+                report["recommended_action"],
+                "enable_kueue_concurrent_admission_for_release",
+            )
+            self.assertEqual(report["feature"]["migration_mode"], "TryPreferredFlavors")
+            self.assertTrue(any(parent["variants"] for parent in report["parent_workloads"]))
+            self.assertIn("Kueue Concurrent Admission", dashboard)
+            self.assertIn("concurrent_admission_plan.json", index)
+            self.assertTrue((root / "reports" / "concurrent_admission_plan.json").exists())
+        for expected in [
+            "ConcurrentAdmission: true",
+            "concurrentAdmissionPolicy",
+            "TryPreferredFlavors",
+            "lastAcceptableFlavorName",
+            "MLOpsConcurrentAdmissionVariantStalled",
+        ]:
+            self.assertIn(expected, manifest)
+        for expected in [
+            "Kueue Concurrent Admission",
+            "Parent Workload",
+            "Variant Workload",
+            "lastAcceptableFlavorName",
+            "alpha",
+        ]:
+            self.assertIn(expected, docs)
+
     def test_pending_workload_visibility_plan_and_kubernetes_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         docs = (repo / "docs" / "kueue-pending-workload-visibility.md").read_text(encoding="utf-8")
@@ -1073,6 +1117,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("scheduling_gate_controller", names)
             self.assertIn("kueue_cohort_fair_sharing", names)
             self.assertIn("kueue_flavor_fungibility", names)
+            self.assertIn("kueue_concurrent_admission", names)
             self.assertIn("kueue_pending_workload_visibility", names)
             self.assertIn("kubernetes_workload_aware_scheduling", names)
             self.assertIn("runtime_security_userns_kubelet_authz", names)

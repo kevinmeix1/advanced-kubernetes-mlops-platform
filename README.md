@@ -26,6 +26,7 @@ unless the implementation matrix below says they are executed.
 | Airflow orchestration | Airflow 3.3 SDK parse contract | DAGs parse against the real constrained SDK; no scheduler is deployed |
 | Interactive canary release lab | Browser-tested hold, advance, and rollback policy transitions | Executable locally |
 | KServe canary readiness | Server-Side Apply dry-run plan, field-manager ownership, and Argo analysis gates | Generated evidence; cluster apply is operator-run |
+| Kueue Concurrent Admission | Parent and Variant Workload evidence, `TryPreferredFlavors`, and flavor-scoped checks | Generated evidence; alpha feature gate is explicit |
 | KServe and Kubernetes | Manifests, policy tests, planning reports | Architecture lab; no cluster reconciliation claim |
 | Minikube | Documented bootstrap and apply commands | Operator-run path, not part of CI evidence |
 
@@ -78,6 +79,14 @@ The dashboard also includes a KServe canary readiness panel for server-side
 apply dry-run, field-manager ownership, and Argo analysis evidence.
 
 ![KServe canary readiness panel](docs/screenshots/dashboard-kserve-canary-readiness.png)
+
+It also includes a Kueue Concurrent Admission panel that summarizes preferred
+flavor migration, Parent/Variant Workload evidence, and alpha feature-gate
+guardrails. See [Kueue Concurrent Admission](docs/kueue-concurrent-admission.md).
+
+![Kueue Concurrent Admission dashboard panel](docs/screenshots/dashboard-concurrent-admission.png)
+
+Mobile capture: [dashboard-concurrent-admission-mobile.png](docs/screenshots/dashboard-concurrent-admission-mobile.png)
 
 The real MLflow path uses an isolated environment:
 
@@ -238,6 +247,7 @@ fast path without installing the integration environment.
 - [ADR 0002: Real MLflow integration boundary](docs/adr/0002-real-mlflow-integration.md)
 - [MLflow registry recovery runbook](docs/mlflow-registry-recovery.md)
 - [Airflow stateful orchestration](docs/airflow-stateful-orchestration.md)
+- [Kueue Concurrent Admission](docs/kueue-concurrent-admission.md)
 - [Kubernetes and Airflow robustness](docs/kubernetes-airflow-robustness.md)
 - [Release admission control](docs/release-admission-control.md)
 - [Production refinements catalogue](docs/production-grade-refinements.md)

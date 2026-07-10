@@ -1,0 +1,264 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kueue-controller-manager-concurrent-admission
+  namespace: kueue-system
+data:
+  controller_manager_config.yaml: |
+    apiVersion: config.kueue.x-k8s.io/v1beta1
+    kind: Configuration
+    featureGates:
+      ConcurrentAdmission: true
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: AdmissionCheck
+metadata:
+  name: release-window
+spec:
+  controllerName: platform.mlops.dev/release-window-check
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: AdmissionCheck
+metadata:
+  name: image-policy
+spec:
+  controllerName: platform.mlops.dev/image-policy-check
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: AdmissionCheck
+metadata:
+  name: dra-health
+spec:
+  controllerName: platform.mlops.dev/dra-health-check
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: AdmissionCheck
+metadata:
+  name: model-cache
+spec:
+  controllerName: platform.mlops.dev/model-cache-check
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: AdmissionCheck
+metadata:
+  name: cost-budget
+spec:
+  controllerName: platform.mlops.dev/cost-budget-check
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  name: reservation
+spec:
+  nodeLabels:
+    capacity-class: reservation
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  name: on-demand
+spec:
+  nodeLabels:
+    capacity-class: on-demand
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  name: spot
+spec:
+  nodeLabels:
+    capacity-class: spot
+  tolerations:
+    - key: spot
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  name: gpu-l4-reserved
+spec:
+  nodeLabels:
+    accelerator: nvidia-l4
+    capacity-class: reservation
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  name: gpu-l4-spot
+spec:
+  nodeLabels:
+    accelerator: nvidia-l4
+    capacity-class: spot
+  tolerations:
+    - key: spot
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+    - key: nvidia.com/gpu
+      operator: Exists
+      effect: NoSchedule
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: release-validation-concurrent
+spec:
+  namespaceSelector:
+    matchLabels:
+      platform.mlops.dev/tenant: release-critical
+  concurrentAdmissionPolicy:
+    migration:
+      mode: TryPreferredFlavors
+      constraints:
+        lastAcceptableFlavorName: reservation
+  admissionChecksStrategy:
+    admissionChecks:
+      - name: capacity-check
+        onFlavors: [reservation, on-demand, spot]
+      - name: image-policy
+        onFlavors: [reservation, on-demand, spot]
+      - name: release-window
+        onFlavors: [reservation, on-demand]
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: reservation
+          resources:
+            - name: cpu
+              nominalQuota: 8
+            - name: memory
+              nominalQuota: 32Gi
+        - name: on-demand
+          resources:
+            - name: cpu
+              nominalQuota: 16
+            - name: memory
+              nominalQuota: 64Gi
+        - name: spot
+          resources:
+            - name: cpu
+              nominalQuota: 24
+            - name: memory
+              nominalQuota: 96Gi
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: batch-scoring-concurrent
+spec:
+  namespaceSelector:
+    matchLabels:
+      platform.mlops.dev/tenant: batch-scoring
+  concurrentAdmissionPolicy:
+    migration:
+      mode: TryPreferredFlavors
+      constraints:
+        lastAcceptableFlavorName: spot
+  admissionChecksStrategy:
+    admissionChecks:
+      - name: capacity-check
+        onFlavors: [spot, on-demand]
+      - name: cost-budget
+        onFlavors: [spot, on-demand]
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: spot
+          resources:
+            - name: cpu
+              nominalQuota: 32
+            - name: memory
+              nominalQuota: 128Gi
+        - name: on-demand
+          resources:
+            - name: cpu
+              nominalQuota: 8
+            - name: memory
+              nominalQuota: 32Gi
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: canary-analysis-concurrent
+spec:
+  namespaceSelector:
+    matchLabels:
+      platform.mlops.dev/tenant: release-critical
+  concurrentAdmissionPolicy:
+    migration:
+      mode: TryPreferredFlavors
+      constraints:
+        lastAcceptableFlavorName: gpu-l4-reserved
+  admissionChecksStrategy:
+    admissionChecks:
+      - name: capacity-check
+        onFlavors: [gpu-l4-reserved, gpu-l4-spot]
+      - name: dra-health
+        onFlavors: [gpu-l4-reserved, gpu-l4-spot]
+      - name: model-cache
+        onFlavors: [gpu-l4-reserved]
+  resourceGroups:
+    - coveredResources: ["nvidia.com/gpu"]
+      flavors:
+        - name: gpu-l4-reserved
+          resources:
+            - name: nvidia.com/gpu
+              nominalQuota: 1
+        - name: gpu-l4-spot
+          resources:
+            - name: nvidia.com/gpu
+              nominalQuota: 2
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: release-validation
+  namespace: mlops-prod
+spec:
+  clusterQueue: release-validation-concurrent
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: batch-replay
+  namespace: mlops-prod
+spec:
+  clusterQueue: batch-scoring-concurrent
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: gpu-canary-analysis
+  namespace: mlops-prod
+spec:
+  clusterQueue: canary-analysis-concurrent
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kueue-concurrent-admission-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: mlops.kueue.concurrent-admission
+      rules:
+        - alert: MLOpsConcurrentAdmissionVariantStalled
+          expr: max by (cluster_queue, flavor) (kueue_workload_admission_checks_wait_time_seconds{cluster_queue=~".*-concurrent"}) > 900
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Kueue Concurrent Admission variant has been waiting too long.
+        - alert: MLOpsConcurrentAdmissionFallbackOnly
+          expr: max by (local_queue) (kueue_admitted_workloads_total{resource_flavor=~"spot|gpu-l4-spot"}) > 0
+          for: 30m
+          labels:
+            severity: info
+          annotations:
+            summary: Workloads are still admitted only on fallback flavors; review promotion gates.

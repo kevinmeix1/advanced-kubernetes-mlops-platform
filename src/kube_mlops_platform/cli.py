@@ -14,6 +14,7 @@ from .chaos import run_chaos_drill
 from .cloud_migration import build_cloud_migration_plan
 from .control_plane import build_release_plan
 from .cohort_fair_sharing import build_cohort_fair_sharing_plan
+from .concurrent_admission import build_concurrent_admission_plan
 from .control_plane_diagnostics import build_control_plane_diagnostics_plan
 from .constrained_impersonation import build_constrained_impersonation_plan
 from .cost_observability import build_cost_observability_report
@@ -170,6 +171,7 @@ def monitor(output: str | Path) -> dict:
     report = build_monitoring_report(root)
     release_plan = build_release_plan(root)
     kserve_canary_readiness = build_kserve_canary_readiness_plan(root)
+    concurrent_admission = build_concurrent_admission_plan(root)
     dashboard = render_dashboard(
         root / "reports" / "mlops_platform_dashboard.html",
         validation_report=read_json(root / "reports" / "data_validation.json"),
@@ -180,11 +182,13 @@ def monitor(output: str | Path) -> dict:
         release_plan=release_plan,
         scheduling_gate_controller=build_scheduling_gate_controller_plan(root),
         kserve_canary_readiness=kserve_canary_readiness,
+        concurrent_admission=concurrent_admission,
     )
     return {
         "monitoring": report,
         "release_plan": release_plan,
         "kserve_canary_readiness": kserve_canary_readiness,
+        "concurrent_admission": concurrent_admission,
         "dashboard": str(dashboard),
     }
 
@@ -254,6 +258,7 @@ def demo(output: str | Path) -> dict:
     scheduling_gate_controller = build_scheduling_gate_controller_plan(root)
     cohort_fair_sharing = build_cohort_fair_sharing_plan(root)
     flavor_fungibility = build_flavor_fungibility_plan(root)
+    concurrent_admission = build_concurrent_admission_plan(root)
     pending_workload_visibility = build_pending_workload_visibility_plan(root)
     tenancy = build_tenancy_report(root)
     identity_access = build_identity_access_report(root)
@@ -325,6 +330,7 @@ def demo(output: str | Path) -> dict:
         "scheduling_gate_controller": scheduling_gate_controller,
         "cohort_fair_sharing": cohort_fair_sharing,
         "flavor_fungibility": flavor_fungibility,
+        "concurrent_admission": concurrent_admission,
         "pending_workload_visibility": pending_workload_visibility,
         "tenancy": tenancy,
         "identity_access": identity_access,
@@ -397,6 +403,7 @@ def main(argv: list[str] | None = None) -> int:
         "scheduling-gate-controller",
         "cohort-fair-sharing",
         "flavor-fungibility",
+        "concurrent-admission",
         "pending-workload-visibility",
         "tenancy-report",
         "identity-report",
@@ -512,6 +519,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_cohort_fair_sharing_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "flavor-fungibility":
         print(json.dumps(build_flavor_fungibility_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "concurrent-admission":
+        print(json.dumps(build_concurrent_admission_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "pending-workload-visibility":
         print(json.dumps(build_pending_workload_visibility_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "tenancy-report":

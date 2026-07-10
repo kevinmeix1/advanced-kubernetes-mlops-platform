@@ -100,16 +100,24 @@ def render_dashboard(
     mlflow_contract: dict | None = None,
     scheduling_gate_controller: dict | None = None,
     kserve_canary_readiness: dict | None = None,
+    concurrent_admission: dict | None = None,
 ) -> Path:
     release_plan = release_plan or {}
     mlflow_contract = mlflow_contract or {}
     scheduling_gate_controller = scheduling_gate_controller or {}
     kserve_canary_readiness = kserve_canary_readiness or {}
+    concurrent_admission = concurrent_admission or {}
     release_policy = release_plan.get("policy", {})
     queue_state = release_plan.get("queue_state", {})
     gate_controller_summary = scheduling_gate_controller.get("summary", {})
     gate_controller = scheduling_gate_controller.get("controller", {})
     canary_traffic = kserve_canary_readiness.get("traffic_plan", {})
+    concurrent_feature = concurrent_admission.get("feature", {})
+    concurrent_scenarios = concurrent_admission.get("scenarios", [])
+    concurrent_parent_workloads = concurrent_admission.get("parent_workloads", [])
+    concurrent_variant_count = sum(
+        len(workload.get("variants", [])) for workload in concurrent_parent_workloads
+    )
     mlflow_aliases = mlflow_contract.get("aliases", {})
     mlflow_versions = mlflow_contract.get("inventory", {}).get("versions", [])
     champion_registry_version = mlflow_aliases.get("champion")
@@ -364,6 +372,18 @@ def render_dashboard(
                 <div class="summary-item"><span>Champion traffic</span><strong>{esc(canary_traffic.get('champion_percent', 'n/a'))}%</strong></div>
                 <div class="summary-item"><span>Canary traffic</span><strong>{esc(canary_traffic.get('canary_percent', 'n/a'))}%</strong></div>
                 <div class="summary-item wide"><span>Target</span><strong>{esc(kserve_canary_readiness.get('target', 'n/a'))}</strong></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h2>Kueue Concurrent Admission</h2>
+              <div class="summary-grid">
+                <div class="summary-item"><span>Readiness</span><strong>{badge(bool(concurrent_admission.get('passed', False)))}</strong></div>
+                <div class="summary-item"><span>Migration mode</span><strong>{esc(concurrent_feature.get('migration_mode', 'not planned'))}</strong></div>
+                <div class="summary-item"><span>Scenarios</span><strong>{esc(len(concurrent_scenarios))}</strong></div>
+                <div class="summary-item"><span>Variant workloads</span><strong>{esc(concurrent_variant_count)}</strong></div>
+                <div class="summary-item"><span>Feature state</span><strong>{esc(concurrent_feature.get('state', 'not planned'))}</strong></div>
+                <div class="summary-item"><span>Action</span><strong>{esc(concurrent_admission.get('recommended_action', 'not planned'))}</strong></div>
               </div>
             </div>
 
