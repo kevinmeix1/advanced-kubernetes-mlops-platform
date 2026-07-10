@@ -1,4 +1,4 @@
-# Production-Grade Refinements
+# Production-Style Refinements
 
 This pass upgrades the project from a runnable demo into a credible platform sample.
 
@@ -20,7 +20,11 @@ This pass upgrades the project from a runnable demo into a credible platform sam
 
 ## Model Lifecycle
 
-- The local registry models candidate, champion, and previous champion stages.
+- The dependency-light local registry models candidate, champion, and previous
+  champion states for the fast demo.
+- The executable MLflow 3 contract uses immutable registry versions, aliases,
+  evidence-digest tags, and loaded-model parity checks instead of deprecated
+  model stages.
 - Promotion requires data quality, F1, calibration, segment gap, and latency gates.
 - Rollback is first-class and test-covered.
 

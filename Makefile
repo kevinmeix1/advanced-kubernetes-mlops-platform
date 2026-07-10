@@ -1,4 +1,15 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission ci-verify minikube-up kubernetes-plan test clean
+.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission mlflow-contract test-mlflow lint-mlflow compose-config compose-up compose-observability-up compose-smoke compose-down ci-verify minikube-up kubernetes-plan test clean
+
+PYTHON ?= python3
+MLFLOW_PORT ?= 5001
+PROMETHEUS_PORT ?= 9090
+MLFLOW_FILES := \
+	src/kube_mlops_platform/cli.py \
+	src/kube_mlops_platform/dashboard.py \
+	src/kube_mlops_platform/mlflow_churn_model.py \
+	src/kube_mlops_platform/mlflow_runtime.py \
+	tests/test_mlflow_registry.py \
+	tools/smoke_mlflow_registry.py
 
 demo:
 	PYTHONPATH=src python3 -m kube_mlops_platform demo --output .local
@@ -179,6 +190,40 @@ constrained-impersonation:
 
 release-admission:
 	PYTHONPATH=src python3 -m kube_mlops_platform release-admission --output .local
+
+mlflow-contract:
+	PYTHONPATH=src $(PYTHON) tools/smoke_mlflow_registry.py --output .local
+
+test-mlflow:
+	PYTHONPATH=src $(PYTHON) -m unittest tests.test_mlflow_registry -v
+
+lint-mlflow:
+	$(PYTHON) -m ruff check --ignore E501,I001 $(MLFLOW_FILES)
+
+compose-config:
+	docker compose config --quiet
+
+compose-up:
+	MLFLOW_PORT=$(MLFLOW_PORT) docker compose up --build --detach mlflow
+
+compose-observability-up:
+	MLFLOW_PORT=$(MLFLOW_PORT) PROMETHEUS_PORT=$(PROMETHEUS_PORT) docker compose --profile observability up --build --detach
+
+compose-smoke:
+	@set -eu; \
+	trap 'docker compose --profile observability down --volumes --remove-orphans >/dev/null 2>&1 || true' EXIT; \
+	docker compose --profile observability down --volumes --remove-orphans >/dev/null 2>&1 || true; \
+	MLFLOW_PORT=$(MLFLOW_PORT) docker compose up --build --detach mlflow; \
+	for attempt in $$(seq 1 60); do \
+		if $(PYTHON) -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:$(MLFLOW_PORT)/health', timeout=1).read()" 2>/dev/null; then break; fi; \
+		if [ "$$attempt" -eq 60 ]; then docker compose logs mlflow mlflow-db-upgrade; exit 1; fi; \
+		sleep 2; \
+	done; \
+	PYTHONPATH=src $(PYTHON) tools/smoke_mlflow_registry.py --tracking-uri http://127.0.0.1:$(MLFLOW_PORT) --output .local; \
+	$(PYTHON) -c "import urllib.request; body=urllib.request.urlopen('http://127.0.0.1:$(MLFLOW_PORT)/metrics', timeout=2).read(); assert b'process_' in body"
+
+compose-down:
+	docker compose --profile observability down --volumes --remove-orphans
 
 ci-verify:
 	PYTHONPATH=src python3 -m compileall -q src tests

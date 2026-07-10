@@ -71,9 +71,17 @@ def root_path(output: str | Path) -> Path:
     return Path(output)
 
 
-def train(output: str | Path, *, version: str = "2026.07.0") -> dict:
+def train(
+    output: str | Path,
+    *,
+    version: str = "2026.07.0",
+    dataset_seed: int = 42,
+) -> dict:
     root = root_path(output)
-    dataset_path = generate_churn_dataset(root / "data" / "training.csv")
+    dataset_path = generate_churn_dataset(
+        root / "data" / "training.csv",
+        seed=dataset_seed,
+    )
     rows = read_csv(dataset_path)
     validation = validate_dataset(rows)
     write_json(root / "reports" / "data_validation.json", validation)
@@ -93,7 +101,11 @@ def train(output: str | Path, *, version: str = "2026.07.0") -> dict:
         root,
         model=model,
         metrics=metrics["validation"],
-        params={"version": version, "features": model["feature_names"]},
+        params={
+            "version": version,
+            "features": model["feature_names"],
+            "dataset_seed": dataset_seed,
+        },
         artifacts={"candidate_model": str(root / "models" / "candidate" / "model.json")},
     )
     registered = register_candidate(root, model, metrics["validation"])

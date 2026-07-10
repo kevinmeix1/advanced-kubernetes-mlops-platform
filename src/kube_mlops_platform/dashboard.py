@@ -14,6 +14,12 @@ def badge(value: bool) -> str:
     return f'<span class="badge {klass}">{label}</span>'
 
 
+def contract_badge(value: object) -> str:
+    if value is None:
+        return '<span class="badge neutral">NOT RUN</span>'
+    return badge(bool(value))
+
+
 DISPLAY_NAMES = {
     "data_quality_gate": "Data quality",
     "min_accuracy": "Minimum accuracy",
@@ -89,10 +95,23 @@ def render_dashboard(
     monitoring_report: dict,
     registry_metadata: dict,
     release_plan: dict | None = None,
+    mlflow_contract: dict | None = None,
 ) -> Path:
     release_plan = release_plan or {}
+    mlflow_contract = mlflow_contract or {}
     release_policy = release_plan.get("policy", {})
     queue_state = release_plan.get("queue_state", {})
+    mlflow_aliases = mlflow_contract.get("aliases", {})
+    mlflow_versions = mlflow_contract.get("inventory", {}).get("versions", [])
+    champion_registry_version = mlflow_aliases.get("champion")
+    champion_application_version = next(
+        (
+            version.get("application_version")
+            for version in mlflow_versions
+            if version.get("registry_version") == champion_registry_version
+        ),
+        registry_metadata.get("version", "none"),
+    )
     gate_rows = [
         {
             "gate": pretty(check.get("name")),
@@ -154,6 +173,7 @@ def render_dashboard(
         .metric strong {{ display: block; font-size: 24px; line-height: 1.2; overflow-wrap: anywhere; }}
         .metric code {{ font-size: 18px; }}
         .layout {{ display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 0.45fr); gap: 16px; align-items: start; }}
+        .layout > div, .panel {{ min-width: 0; }}
         .panel {{
           background: white;
           border: 1px solid #d7dee7;
@@ -162,7 +182,7 @@ def render_dashboard(
           padding: 16px;
           box-shadow: 0 1px 2px rgba(23, 32, 38, 0.04);
         }}
-        .table-wrap {{ overflow-x: auto; border: 1px solid #e4e9f0; border-radius: 6px; }}
+        .table-wrap {{ overflow-x: auto; overscroll-behavior-inline: contain; border: 1px solid #e4e9f0; border-radius: 6px; }}
         table {{ width: 100%; min-width: 0; border-collapse: collapse; background: white; table-layout: fixed; }}
         th, td {{ border-bottom: 1px solid #e8edf3; padding: 11px 12px; text-align: left; font-size: 14px; overflow-wrap: anywhere; vertical-align: top; }}
         th {{ background: #f8fafc; color: #334155; font-weight: 700; }}
@@ -173,10 +193,11 @@ def render_dashboard(
         .metric .badge {{ width: auto; max-width: max-content; }}
         .pass {{ background: #dcfce7; color: #166534; }}
         .fail {{ background: #fee2e2; color: #991b1b; }}
+        .neutral {{ background: #e2e8f0; color: #334155; }}
         .traffic {{ color: #0f766e; font-weight: 700; }}
         .chip {{ display: inline-block; margin: 0 5px 5px 0; padding: 4px 8px; border-radius: 999px; background: #ecfdf5; color: #0f766e; font-size: 12px; font-weight: 800; white-space: nowrap; }}
         .summary-grid {{ display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }}
-        .summary-item {{ border: 1px solid #e4e9f0; border-radius: 6px; padding: 12px; min-height: 76px; }}
+        .summary-item {{ border-top: 1px solid #e4e9f0; padding: 12px 2px; min-height: 70px; }}
         .summary-item span {{ display: block; color: #64748b; font-size: 12px; margin-bottom: 8px; }}
         .summary-item strong {{ display: block; font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }}
         .summary-item.wide {{ grid-column: 1 / -1; }}
@@ -184,6 +205,7 @@ def render_dashboard(
           header {{ padding: 22px 18px; }}
           main {{ padding: 18px; }}
           .layout {{ grid-template-columns: 1fr; }}
+          .wide-table {{ min-width: 680px; }}
           h1 {{ font-size: 24px; }}
         }}
       </style>
@@ -191,27 +213,27 @@ def render_dashboard(
     <body>
       <header>
         <h1>Kubernetes MLOps Platform</h1>
-        <p>Metaflow training, Airflow orchestration, MLflow registry, KServe serving, and production-grade observability.</p>
+        <p>Executable lifecycle and MLflow registry evidence, with separately scoped Airflow, KServe, and Kubernetes architecture labs.</p>
       </header>
       <main>
         <section class="grid">
-          <div class="metric"><span>Champion model</span><strong>{esc(registry_metadata.get('version', 'none'))}</strong></div>
+          <div class="metric"><span>Champion model</span><strong>{esc(champion_application_version)}</strong></div>
           <div class="metric"><span>Gate status</span><strong>{badge(gate_report.get('passed', False))}</strong></div>
           <div class="metric"><span>KServe status</span><strong>{esc(deployment_state.get('status', 'not deployed'))}</strong></div>
-          <div class="metric"><span>Latency p95</span><strong>{esc(monitoring_report.get('latency_ms', {}).get('p95', 0))} ms</strong></div>
+          <div class="metric"><span>MLflow contract</span><strong>{contract_badge(mlflow_contract.get('passed'))}</strong></div>
         </section>
 
         <section class="layout">
           <div>
             <div class="panel">
               <h2>Evaluation Gates</h2>
-              <div class="table-wrap"><table><tr><th>Gate</th><th>Status</th><th>Observed</th><th>Threshold</th></tr>{rows(gate_rows, ['gate', 'status', 'observed', 'threshold'])}</table></div>
+              <div class="table-wrap"><table class="wide-table"><tr><th>Gate</th><th>Status</th><th>Observed</th><th>Threshold</th></tr>{rows(gate_rows, ['gate', 'status', 'observed', 'threshold'])}</table></div>
             </div>
 
             <div class="panel">
               <h2>KServe Deployment</h2>
               <div class="table-wrap">
-                <table>
+                <table class="wide-table">
                   <tr><th>Service</th><th>Namespace</th><th>Runtime</th><th>Traffic</th><th>Model URI</th></tr>
                   <tr><td>{display_label(deployment_state.get('service_name'))}</td><td>{esc(deployment_state.get('namespace'))}</td><td>{display_label(deployment_state.get('runtime'))}</td><td class="traffic">{traffic_chips(deployment_state.get('traffic'))}</td><td>{short_path(deployment_state.get('model_uri'))}</td></tr>
                 </table>
@@ -220,11 +242,25 @@ def render_dashboard(
 
             <div class="panel">
               <h2>Recent Predictions</h2>
-              <div class="table-wrap"><table><tr><th>Customer</th><th>Score</th><th>Prediction</th><th>Model</th><th>Latency</th><th>Status</th></tr>{rows(prediction_rows, ['customer_id', 'churn_score', 'prediction', 'model_version', 'latency_ms', 'status'])}</table></div>
+              <div class="table-wrap"><table class="wide-table"><tr><th>Customer</th><th>Score</th><th>Prediction</th><th>Model</th><th>Latency</th><th>Status</th></tr>{rows(prediction_rows, ['customer_id', 'churn_score', 'prediction', 'model_version', 'latency_ms', 'status'])}</table></div>
             </div>
           </div>
 
           <div>
+            <div class="panel">
+              <h2>Executable MLflow Registry</h2>
+              <div class="summary-grid">
+                <div class="summary-item"><span>Runtime</span><strong>{esc(mlflow_contract.get('mlflow_version', 'not run'))}</strong></div>
+                <div class="summary-item"><span>Backend</span><strong>{esc(mlflow_contract.get('tracking_backend', 'not run'))}</strong></div>
+                <div class="summary-item"><span>Registered model</span><strong>{esc(mlflow_contract.get('registered_model', 'not run'))}</strong></div>
+                <div class="summary-item"><span>Registry versions</span><strong>{esc(len(mlflow_versions))}</strong></div>
+                <div class="summary-item"><span>Champion alias</span><strong>{esc(mlflow_aliases.get('champion', 'not run'))}</strong></div>
+                <div class="summary-item"><span>Previous alias</span><strong>{esc(mlflow_aliases.get('previous_champion', 'not run'))}</strong></div>
+                <div class="summary-item"><span>Idempotency</span><strong>{contract_badge(mlflow_contract.get('checks', {}).get('registration_idempotency'))}</strong></div>
+                <div class="summary-item"><span>Rollback parity</span><strong>{contract_badge(mlflow_contract.get('checks', {}).get('rollback_prediction_parity'))}</strong></div>
+              </div>
+            </div>
+
             <div class="panel">
               <h2>Great Expectations Validation</h2>
               <div class="table-wrap"><table><tr><th>Check</th><th>Status</th><th>Observed</th></tr>{rows(validation_rows, ['check', 'status', 'observed'])}</table></div>

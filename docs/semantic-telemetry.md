@@ -5,7 +5,8 @@
 ## What It Shows
 
 - Release spans with Airflow DAG, task, release version, and environment attributes.
-- Training and registry spans with MLflow run ID, model name, model version, and model stage.
+- Training and registry spans with MLflow run ID, logged-model ID, registry
+  version, application version, and deployment alias.
 - KServe canary spans with `InferenceService`, gateway objective, latency, and traffic percentage.
 - Kubernetes namespace, pod, and container attributes for root-cause pivots.
 - Collector-side redaction of feature dictionaries, prediction scores, request bodies, and customer identifiers.

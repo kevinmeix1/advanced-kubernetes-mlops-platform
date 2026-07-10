@@ -1,14 +1,14 @@
 [project]
 name = "kubernetes-mlops-platform"
-version = "0.1.0"
-requires-python = ">=3.9"
+version = "0.2.0"
+requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
 integrations = [
   "metaflow>=2.12",
   "apache-airflow>=2.9",
-  "mlflow>=2.14",
+  "mlflow==3.14.0",
   "kserve>=0.13",
   "great-expectations>=0.18",
   "prometheus-client>=0.20",
@@ -16,3 +16,26 @@ integrations = [
   "fastapi>=0.111"
 ]
 airflow33 = ["apache-airflow==3.3.0"]
+mlflow3 = [
+  "mlflow==3.14.0",
+  "pandas==2.3.3",
+]
+test = [
+  "mlflow==3.14.0",
+  "pandas==2.3.3",
+]
+dev = ["ruff==0.15.21"]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
