@@ -163,6 +163,7 @@ jobs:
             echo "- Application-version idempotency and conflict detection"
             echo "- Gate-protected candidate, champion, and previous-champion aliases"
             echo "- Loaded-model prediction parity and tested rollback"
+            echo "- MLflow exporter identity and Prometheus exposition contract"
             echo "- Non-root, read-only Compose server with explicit DB migration"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload MLflow contract and wheel
@@ -172,5 +173,6 @@ jobs:
           name: mlflow-3-registry-contract
           path: |
             .local/reports/mlflow_registry_contract.json
+            .local/reports/mlflow_server_metrics_contract.json
             dist
           if-no-files-found: error

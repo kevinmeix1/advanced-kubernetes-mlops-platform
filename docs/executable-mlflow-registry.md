@@ -88,6 +88,15 @@ The Compose server uses one worker because SQLite is a single-node boundary.
 Horizontal scaling requires an external relational database and shared artifact
 storage.
 
+## Metrics Contract
+
+`make compose-smoke` validates the exporter family that MLflow itself exposes:
+`mlflow_exporter_info` with the pinned exporter version. It does not assume the
+presence of generic `process_*` collectors, because those are not part of
+MLflow's multiprocess exporter contract. The resulting
+`mlflow_server_metrics_contract.json` report is uploaded with the registry
+evidence in CI.
+
 ## Security Boundary
 
 The local server configures explicit allowed hosts, explicit CORS origins, a

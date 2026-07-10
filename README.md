@@ -120,6 +120,7 @@ The Compose path uses:
 - a non-root process, read-only root filesystem, dropped capabilities, PID and resource limits
 - MLflow's Prometheus endpoint, with an optional Prometheus profile
 - an explicit exporter dependency and import preflight for that metrics endpoint
+- a versioned metrics smoke report that checks MLflow's exporter identity instead of incidental process metrics
 
 SQLite is deliberate for this single-node integration test. PostgreSQL and
 object storage are the production migration, not hidden Compose dependencies.
@@ -176,6 +177,7 @@ make predict              # one prediction through the local champion
 make monitor              # drift, latency, error, and throughput report
 make rollback             # local file-backed rollback
 make mlflow-contract      # real SQL registry, aliases, load, and rollback
+make mlflow-metrics-contract # validate a running MLflow Prometheus endpoint
 make test-mlflow          # MLflow integration regression test
 make lint-mlflow          # Ruff on the executable integration boundary
 make compose-smoke        # live HTTP MLflow server and metrics contract

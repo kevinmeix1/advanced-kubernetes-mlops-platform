@@ -1,4 +1,4 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission mlflow-contract test-mlflow lint-mlflow compose-config compose-up compose-observability-up compose-smoke compose-down ci-verify minikube-up kubernetes-plan test clean
+.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission mlflow-contract mlflow-metrics-contract test-mlflow lint-mlflow compose-config compose-up compose-observability-up compose-smoke compose-down ci-verify minikube-up kubernetes-plan test clean
 
 PYTHON ?= python3
 MLFLOW_PORT ?= 5001
@@ -8,7 +8,9 @@ MLFLOW_FILES := \
 	src/kube_mlops_platform/dashboard.py \
 	src/kube_mlops_platform/mlflow_churn_model.py \
 	src/kube_mlops_platform/mlflow_runtime.py \
+	tests/test_mlflow_metrics_contract.py \
 	tests/test_mlflow_registry.py \
+	tools/smoke_mlflow_metrics.py \
 	tools/smoke_mlflow_registry.py
 
 demo:
@@ -194,8 +196,11 @@ release-admission:
 mlflow-contract:
 	PYTHONPATH=src $(PYTHON) tools/smoke_mlflow_registry.py --output .local
 
+mlflow-metrics-contract:
+	$(PYTHON) tools/smoke_mlflow_metrics.py --base-url http://127.0.0.1:$(MLFLOW_PORT) --output .local/reports/mlflow_server_metrics_contract.json
+
 test-mlflow:
-	PYTHONPATH=src $(PYTHON) -m unittest tests.test_mlflow_registry -v
+	PYTHONPATH=src $(PYTHON) -m unittest tests.test_mlflow_registry tests.test_mlflow_metrics_contract -v
 
 lint-mlflow:
 	$(PYTHON) -m ruff check --ignore E501,I001 $(MLFLOW_FILES)
@@ -220,7 +225,7 @@ compose-smoke:
 		sleep 2; \
 	done; \
 	PYTHONPATH=src $(PYTHON) tools/smoke_mlflow_registry.py --tracking-uri http://127.0.0.1:$(MLFLOW_PORT) --output .local; \
-	$(PYTHON) -c "import urllib.request; body=urllib.request.urlopen('http://127.0.0.1:$(MLFLOW_PORT)/metrics', timeout=2).read(); assert b'process_' in body"
+	$(PYTHON) tools/smoke_mlflow_metrics.py --base-url http://127.0.0.1:$(MLFLOW_PORT) --output .local/reports/mlflow_server_metrics_contract.json
 
 compose-down:
 	docker compose --profile observability down --volumes --remove-orphans
