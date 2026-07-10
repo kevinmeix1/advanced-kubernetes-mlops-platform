@@ -99,14 +99,17 @@ def render_dashboard(
     release_plan: dict | None = None,
     mlflow_contract: dict | None = None,
     scheduling_gate_controller: dict | None = None,
+    kserve_canary_readiness: dict | None = None,
 ) -> Path:
     release_plan = release_plan or {}
     mlflow_contract = mlflow_contract or {}
     scheduling_gate_controller = scheduling_gate_controller or {}
+    kserve_canary_readiness = kserve_canary_readiness or {}
     release_policy = release_plan.get("policy", {})
     queue_state = release_plan.get("queue_state", {})
     gate_controller_summary = scheduling_gate_controller.get("summary", {})
     gate_controller = scheduling_gate_controller.get("controller", {})
+    canary_traffic = kserve_canary_readiness.get("traffic_plan", {})
     mlflow_aliases = mlflow_contract.get("aliases", {})
     mlflow_versions = mlflow_contract.get("inventory", {}).get("versions", [])
     champion_registry_version = mlflow_aliases.get("champion")
@@ -350,6 +353,17 @@ def render_dashboard(
                   <tr><th>Service</th><th>Namespace</th><th>Runtime</th><th>Traffic</th><th>Model URI</th></tr>
                   <tr><td>{display_label(deployment_state.get('service_name'))}</td><td>{esc(deployment_state.get('namespace'))}</td><td>{display_label(deployment_state.get('runtime'))}</td><td class="traffic">{traffic_chips(deployment_state.get('traffic'))}</td><td>{short_path(deployment_state.get('model_uri'))}</td></tr>
                 </table>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h2>KServe Canary Readiness</h2>
+              <div class="summary-grid">
+                <div class="summary-item"><span>Apply gate</span><strong>{badge(bool(kserve_canary_readiness.get('passed', False)))}</strong></div>
+                <div class="summary-item"><span>Action</span><strong>{esc(kserve_canary_readiness.get('recommended_action', 'not planned'))}</strong></div>
+                <div class="summary-item"><span>Champion traffic</span><strong>{esc(canary_traffic.get('champion_percent', 'n/a'))}%</strong></div>
+                <div class="summary-item"><span>Canary traffic</span><strong>{esc(canary_traffic.get('canary_percent', 'n/a'))}%</strong></div>
+                <div class="summary-item wide"><span>Target</span><strong>{esc(kserve_canary_readiness.get('target', 'n/a'))}</strong></div>
               </div>
             </div>
 

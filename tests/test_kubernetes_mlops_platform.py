@@ -34,6 +34,7 @@ from kube_mlops_platform.indexed_job_resilience import build_indexed_job_resilie
 from kube_mlops_platform.inplace_resize import build_inplace_resize_plan
 from kube_mlops_platform.inference_gateway import build_inference_gateway_plan
 from kube_mlops_platform.io import read_csv, read_json, read_jsonl, write_json
+from kube_mlops_platform.kserve_canary_readiness import build_kserve_canary_readiness_plan
 from kube_mlops_platform.kuberay_capacity import build_kuberay_capacity_plan
 from kube_mlops_platform.memory_qos import build_memory_qos_plan
 from kube_mlops_platform.model_cache import build_model_cache_plan
@@ -346,7 +347,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             "concurrency",
         ]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "scheduling_gate_controller_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "scheduling_gate_controller_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "kserve_canary_readiness_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
 
     def test_accelerator_capacity_plan_and_kubernetes_assets_exist(self) -> None:
@@ -874,6 +875,41 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["Gateway API Inference Extension", "InferencePool", "Endpoint Picker", "InferenceObjective"]:
             self.assertIn(expected, docs)
 
+    def test_kserve_canary_readiness_plan_and_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        manifest = (repo / "kserve" / "canary-analysis.yaml").read_text(encoding="utf-8")
+        docs = (repo / "docs" / "kserve-canary-readiness.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_json(
+                root / "reports" / "release_admission_decision.json",
+                {
+                    "decision": {
+                        "failure_policy": "fail_closed",
+                        "recommended_action": "admit_canary",
+                    }
+                },
+            )
+            report = build_kserve_canary_readiness_plan(root, repo_root=repo)
+
+            self.assertTrue(report["passed"])
+            self.assertEqual(report["traffic_plan"]["canary_percent"], 10)
+            self.assertEqual(
+                report["recommended_action"],
+                "apply_canary_with_server_side_dry_run",
+            )
+            self.assertTrue((root / "reports" / "kserve_canary_readiness_plan.json").exists())
+        for expected in [
+            "--server-side",
+            "--dry-run=server",
+            "--field-manager=mlops-release-controller",
+            "AnalysisTemplate",
+            "successCondition",
+        ]:
+            self.assertIn(expected, manifest)
+        for expected in ["Server-Side Apply", "dry-run", "canary", "Argo analysis"]:
+            self.assertIn(expected, docs)
+
     def test_semantic_telemetry_plan_and_collector_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         collector = (repo / "kubernetes" / "opentelemetry-collector.yaml").read_text(encoding="utf-8")
@@ -1020,6 +1056,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("dynamic_task_mapping", names)
             self.assertIn("kueue_admission", names)
             self.assertIn("semantic_telemetry_contract", names)
+            self.assertIn("kserve_canary_server_side_apply", names)
             self.assertIn("airflow_deadline_alerts", names)
             self.assertIn("opencost_finops", names)
             self.assertIn("kueue_elastic_workloads", names)
@@ -1093,6 +1130,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
                 "topology_placement_plan.json",
                 "kuberay_capacity_plan.json",
                 "inference_gateway_plan.json",
+                "kserve_canary_readiness_plan.json",
                 "semantic_telemetry_plan.json",
                 "deadline_alert_plan.json",
                 "cost_observability_report.json",
@@ -1167,6 +1205,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue(dashboard_path.exists())
             dashboard = dashboard_path.read_text(encoding="utf-8")
             self.assertIn("Canary Release Lab", dashboard)
+            self.assertIn("KServe Canary Readiness", dashboard)
             self.assertIn('data-testid="canary-release-lab"', dashboard)
             self.assertIn("function evaluateReleasePolicy", dashboard)
             self.assertIn('"rollback_error_rate":0.05', dashboard)
@@ -1180,6 +1219,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue((root / "reports" / "topology_placement_plan.json").exists())
             self.assertTrue((root / "reports" / "kuberay_capacity_plan.json").exists())
             self.assertTrue((root / "reports" / "inference_gateway_plan.json").exists())
+            self.assertTrue((root / "reports" / "kserve_canary_readiness_plan.json").exists())
             self.assertTrue((root / "reports" / "semantic_telemetry_plan.json").exists())
             self.assertTrue((root / "reports" / "deadline_alert_plan.json").exists())
             self.assertTrue((root / "reports" / "cost_observability_report.json").exists())

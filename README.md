@@ -25,6 +25,7 @@ unless the implementation matrix below says they are executed.
 | Containerized MLflow | `make compose-smoke` | Executed in GitHub Actions; Docker is unavailable on the development host |
 | Airflow orchestration | Airflow 3.3 SDK parse contract | DAGs parse against the real constrained SDK; no scheduler is deployed |
 | Interactive canary release lab | Browser-tested hold, advance, and rollback policy transitions | Executable locally |
+| KServe canary readiness | Server-Side Apply dry-run plan, field-manager ownership, and Argo analysis gates | Generated evidence; cluster apply is operator-run |
 | KServe and Kubernetes | Manifests, policy tests, planning reports | Architecture lab; no cluster reconciliation claim |
 | Minikube | Documented bootstrap and apply commands | Operator-run path, not part of CI evidence |
 
@@ -72,6 +73,11 @@ all five controls to ADVANCE CANARY, then raise error rate to 6% to produce a
 same emitted thresholds as the Python release-policy evaluator.
 
 ![Responsive rollback decision](docs/screenshots/dashboard-mobile.png)
+
+The dashboard also includes a KServe canary readiness panel for server-side
+apply dry-run, field-manager ownership, and Argo analysis evidence.
+
+![KServe canary readiness panel](docs/screenshots/dashboard-kserve-canary-readiness.png)
 
 The real MLflow path uses an isolated environment:
 
@@ -193,6 +199,7 @@ make test-mlflow          # MLflow integration regression test
 make lint-mlflow          # Ruff on the executable integration boundary
 make compose-smoke        # live HTTP MLflow server and metrics contract
 make airflow-sdk-contract # parse DAGs against Airflow 3.3
+make kserve-canary-readiness # server-side dry-run and canary analysis evidence
 make scheduling-gate-controller # fail-closed Pod Scheduling Readiness controller evidence
 make demo-voice           # generate natural neural narration in an isolated environment
 make demo-video           # assemble the committed hold/advance/rollback walkthrough

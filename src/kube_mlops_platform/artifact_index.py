@@ -32,6 +32,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Topology Placement", "topology_placement_plan.json", "Kueue topology-aware placement, serving spread constraints, and topology fallback policy."),
         ("KubeRay Capacity", "kuberay_capacity_plan.json", "Kueue-admitted RayJobs, elastic worker bounds, release-analysis fanout, and fallback policy."),
         ("Inference Gateway", "inference_gateway_plan.json", "Gateway API Inference Extension pool, endpoint picker fallback, route priority, and canary routing signals."),
+        ("KServe Canary Readiness", "kserve_canary_readiness_plan.json", "Server-Side Apply dry-run, field-manager ownership, canary traffic split, and Argo analysis gate evidence."),
         ("Semantic Telemetry", "semantic_telemetry_plan.json", "Release, MLflow, KServe, Kubernetes, and SLO attributes with prediction payload redaction."),
         ("Deadline Alerts", "deadline_alert_plan.json", "Airflow 3 release queue, registration, canary readiness, and rollback deadline policies."),
         ("Cost Observability", "cost_observability_report.json", "OpenCost exporter, allocation labels, GPU spend, namespace budgets, and idle-cost alerts."),

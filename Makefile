@@ -1,4 +1,4 @@
-.PHONY: demo demo-voice demo-video train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes scheduling-gate-controller cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission mlflow-contract mlflow-metrics-contract test-mlflow lint-mlflow compose-config compose-up compose-observability-up compose-smoke compose-down ci-verify minikube-up kubernetes-plan test clean
+.PHONY: demo demo-voice demo-video train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan kserve-canary-readiness semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes scheduling-gate-controller cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission mlflow-contract mlflow-metrics-contract test-mlflow lint-mlflow compose-config compose-up compose-observability-up compose-smoke compose-down ci-verify minikube-up kubernetes-plan test clean
 
 PYTHON ?= python3
 MLFLOW_PORT ?= 5001
@@ -108,6 +108,9 @@ kuberay-plan:
 
 inference-gateway-plan:
 	PYTHONPATH=src python3 -m kube_mlops_platform inference-gateway-plan --output .local
+
+kserve-canary-readiness:
+	PYTHONPATH=src python3 -m kube_mlops_platform kserve-canary-readiness --output .local
 
 semantic-telemetry-plan:
 	PYTHONPATH=src python3 -m kube_mlops_platform semantic-telemetry-plan --output .local
@@ -257,6 +260,7 @@ ci-verify:
 	test -f .local/reports/topology_placement_plan.json
 	test -f .local/reports/kuberay_capacity_plan.json
 	test -f .local/reports/inference_gateway_plan.json
+	test -f .local/reports/kserve_canary_readiness_plan.json
 	test -f .local/reports/semantic_telemetry_plan.json
 	test -f .local/reports/deadline_alert_plan.json
 	test -f .local/reports/cost_observability_report.json
@@ -302,6 +306,7 @@ ci-verify:
 	python3 -m json.tool .local/reports/topology_placement_plan.json >/dev/null
 	python3 -m json.tool .local/reports/kuberay_capacity_plan.json >/dev/null
 	python3 -m json.tool .local/reports/inference_gateway_plan.json >/dev/null
+	python3 -m json.tool .local/reports/kserve_canary_readiness_plan.json >/dev/null
 	python3 -m json.tool .local/reports/semantic_telemetry_plan.json >/dev/null
 	python3 -m json.tool .local/reports/deadline_alert_plan.json >/dev/null
 	python3 -m json.tool .local/reports/cost_observability_report.json >/dev/null
@@ -339,6 +344,7 @@ minikube-up:
 	@echo "  kubectl create namespace mlops --dry-run=client -o yaml | kubectl apply -f -"
 	@echo "  kubectl apply -f kserve/production-hardening.yaml"
 	@echo "  kubectl apply -f kserve/inferenceservice.yaml"
+	@echo "  kubectl apply -f kserve/canary-analysis.yaml"
 	@echo "  kubectl apply -f kserve/local-model-cache.yaml"
 	@echo "  kubectl apply -f kubernetes/training-and-monitoring-workloads.yaml"
 	@echo "  kubectl apply -f kubernetes/resource-optimization.yaml"

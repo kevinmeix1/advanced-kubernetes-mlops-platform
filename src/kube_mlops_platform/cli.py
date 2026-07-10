@@ -35,6 +35,7 @@ from .indexed_job_resilience import build_indexed_job_resilience_plan
 from .inplace_resize import build_inplace_resize_plan
 from .inference_gateway import build_inference_gateway_plan
 from .io import read_csv, read_json, write_csv, write_json
+from .kserve_canary_readiness import build_kserve_canary_readiness_plan
 from .kuberay_capacity import build_kuberay_capacity_plan
 from .memory_qos import build_memory_qos_plan
 from .model_cache import build_model_cache_plan
@@ -168,6 +169,7 @@ def monitor(output: str | Path) -> dict:
     generate_churn_dataset(root / "data" / "current_scoring.csv", rows=240, seed=99, drift=True)
     report = build_monitoring_report(root)
     release_plan = build_release_plan(root)
+    kserve_canary_readiness = build_kserve_canary_readiness_plan(root)
     dashboard = render_dashboard(
         root / "reports" / "mlops_platform_dashboard.html",
         validation_report=read_json(root / "reports" / "data_validation.json"),
@@ -177,8 +179,14 @@ def monitor(output: str | Path) -> dict:
         registry_metadata=champion_metadata(root),
         release_plan=release_plan,
         scheduling_gate_controller=build_scheduling_gate_controller_plan(root),
+        kserve_canary_readiness=kserve_canary_readiness,
     )
-    return {"monitoring": report, "release_plan": release_plan, "dashboard": str(dashboard)}
+    return {
+        "monitoring": report,
+        "release_plan": release_plan,
+        "kserve_canary_readiness": kserve_canary_readiness,
+        "dashboard": str(dashboard),
+    }
 
 
 def governance(output: str | Path) -> dict:
@@ -266,6 +274,7 @@ def demo(output: str | Path) -> dict:
         namespace="mlops",
     )
     release_admission = build_release_admission_decision(root)
+    kserve_canary_readiness = build_kserve_canary_readiness_plan(root)
     artifact_index = render_artifact_index(
         root,
         title="Kubernetes MLOps Platform",
@@ -329,6 +338,7 @@ def demo(output: str | Path) -> dict:
         "suspended_job_resources": suspended_job_resources,
         "constrained_impersonation": constrained_impersonation,
         "release_admission": release_admission,
+        "kserve_canary_readiness": kserve_canary_readiness,
         "artifact_index": str(artifact_index),
         "orchestration_scorecard": orchestration_scorecard,
         "supply_chain": supply_chain,
@@ -369,6 +379,7 @@ def main(argv: list[str] | None = None) -> int:
         "topology-plan",
         "kuberay-plan",
         "inference-gateway-plan",
+        "kserve-canary-readiness",
         "semantic-telemetry-plan",
         "deadline-alerts-plan",
         "cost-observability",
@@ -465,6 +476,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_kuberay_capacity_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "inference-gateway-plan":
         print(json.dumps(build_inference_gateway_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "kserve-canary-readiness":
+        print(json.dumps(build_kserve_canary_readiness_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "semantic-telemetry-plan":
         print(json.dumps(build_semantic_telemetry_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "deadline-alerts-plan":
