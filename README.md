@@ -259,6 +259,7 @@ fast path without installing the integration environment.
 - [ADR 0002: Real MLflow integration boundary](docs/adr/0002-real-mlflow-integration.md)
 - [MLflow registry recovery runbook](docs/mlflow-registry-recovery.md)
 - [Airflow stateful orchestration](docs/airflow-stateful-orchestration.md)
+- [AI workload telemetry readiness](docs/ai-workload-telemetry.md)
 - [Kueue Concurrent Admission](docs/kueue-concurrent-admission.md)
 - [Kubernetes and Airflow robustness](docs/kubernetes-airflow-robustness.md)
 - [Release admission control](docs/release-admission-control.md)

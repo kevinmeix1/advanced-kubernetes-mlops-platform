@@ -7,6 +7,7 @@ from pathlib import Path
 from kube_mlops_platform.accelerator_plan import build_accelerator_capacity_plan
 from kube_mlops_platform.admin_access_diagnostics import build_admin_access_diagnostic_plan
 from kube_mlops_platform.advanced_device_sharing import build_advanced_device_sharing_plan
+from kube_mlops_platform.ai_workload_telemetry import build_ai_workload_telemetry_plan
 from kube_mlops_platform.airflow_stateful_orchestration import build_airflow_stateful_orchestration_plan
 from kube_mlops_platform.asset_partitioning import build_asset_partitioning_plan
 from kube_mlops_platform.chaos import run_chaos_drill
@@ -210,6 +211,20 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue((Path(tmp) / "reports" / "trace_report.json").exists())
         for expected in ["kind: ConfigMap", "otlp", "k8sattributes", "memory_limiter", "attributes/semantic_redaction", "prediction.request.features", "customer.id", "prometheus", "batch"]:
             self.assertIn(expected, collector)
+
+    def test_ai_workload_telemetry_plan_maps_resources_assets_and_remediation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plan = build_ai_workload_telemetry_plan(root)
+            resource_fields = set(plan["required_resource_fields"])
+            otel_fields = set(plan["required_otel_fields"])
+
+            self.assertTrue(plan["passed"])
+            self.assertIn("pod.resources.requests.cpu", resource_fields)
+            self.assertTrue(any(field.startswith("dra.") for field in resource_fields))
+            self.assertIn("airflow.asset.uri", otel_fields)
+            self.assertTrue(any("Gateway traffic" in workload["remediation"] for workload in plan["workloads"]))
+            self.assertTrue((root / "reports" / "ai_workload_telemetry_plan.json").exists())
 
     def test_chaos_drill_and_chaos_mesh_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
