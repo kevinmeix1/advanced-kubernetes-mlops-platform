@@ -88,6 +88,14 @@ guardrails. See [Kueue Concurrent Admission](docs/kueue-concurrent-admission.md)
 
 Mobile capture: [dashboard-concurrent-admission-mobile.png](docs/screenshots/dashboard-concurrent-admission-mobile.png)
 
+The Kueue Admission Path Lab lets reviewers switch workload scenarios and see
+preferred flavors, last-acceptable flavor boundaries, and flavor-scoped checks
+without reading the manifest first.
+
+![Kueue admission path lab](docs/screenshots/dashboard-admission-path-lab.png)
+
+Mobile capture: [dashboard-admission-path-lab-mobile.png](docs/screenshots/dashboard-admission-path-lab-mobile.png)
+
 The real MLflow path uses an isolated environment:
 
 ```bash

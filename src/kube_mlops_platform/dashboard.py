@@ -115,6 +115,14 @@ def render_dashboard(
     concurrent_feature = concurrent_admission.get("feature", {})
     concurrent_scenarios = concurrent_admission.get("scenarios", [])
     concurrent_parent_workloads = concurrent_admission.get("parent_workloads", [])
+    concurrent_payload = json.dumps(
+        {
+            "feature": concurrent_feature,
+            "scenarios": concurrent_scenarios,
+            "parent_workloads": concurrent_parent_workloads,
+        },
+        separators=(",", ":"),
+    ).replace("</", "<\\/")
     concurrent_variant_count = sum(
         len(workload.get("variants", [])) for workload in concurrent_parent_workloads
     )
@@ -280,10 +288,31 @@ def render_dashboard(
         .check-item {{ display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 7px; border-radius: 4px; background: #f8fafc; color: #475569; font-size: 10px; }}
         .check-dot {{ width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #16a34a; }}
         .check-item.fail .check-dot {{ background: #dc2626; }}
+        .admission-lab {{ border-left: 4px solid #2563eb; margin: 0 0 18px; }}
+        .admission-top {{ display: grid; grid-template-columns: minmax(0,1fr) 280px; gap: 18px; align-items: start; margin-bottom: 16px; }}
+        .admission-top p {{ color: #64748b; font-size: 13px; line-height: 1.45; margin: 5px 0 0; }}
+        .select-wrap label {{ display: block; color: #475569; font-size: 12px; font-weight: 800; margin-bottom: 6px; }}
+        .select-wrap select {{ width: 100%; min-height: 38px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; background: #fff; color: #0f172a; font: inherit; }}
+        .admission-grid {{ display: grid; grid-template-columns: minmax(0,.86fr) minmax(0,1.14fr); gap: 18px; align-items: start; }}
+        .admission-facts {{ display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); border: 1px solid #e4e9f0; border-radius: 6px; overflow: hidden; }}
+        .admission-facts div {{ padding: 12px; min-height: 74px; background: #f8fafc; border-right: 1px solid #e4e9f0; border-bottom: 1px solid #e4e9f0; }}
+        .admission-facts div:nth-child(2n) {{ border-right: 0; }}
+        .admission-facts div:nth-last-child(-n+2) {{ border-bottom: 0; }}
+        .admission-facts span {{ display: block; color: #64748b; font-size: 11px; margin-bottom: 7px; }}
+        .admission-facts strong {{ display: block; font-size: 16px; overflow-wrap: anywhere; }}
+        .flavor-path {{ display: grid; gap: 10px; }}
+        .flavor-step {{ display: grid; grid-template-columns: 140px minmax(0,1fr) 110px; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #e4e9f0; border-radius: 6px; background: #fff; }}
+        .flavor-step.current {{ border-color: #93c5fd; background: #eff6ff; }}
+        .flavor-step.target {{ border-color: #86efac; background: #f0fdf4; }}
+        .flavor-name {{ font-weight: 900; color: #172026; }}
+        .flavor-checks {{ display: flex; flex-wrap: wrap; gap: 5px; }}
+        .flavor-check {{ padding: 3px 7px; border-radius: 999px; background: #e0f2fe; color: #075985; font-size: 11px; font-weight: 800; white-space: nowrap; }}
+        .flavor-state {{ color: #475569; font-size: 12px; font-weight: 800; text-align: right; }}
+        .admission-note {{ margin: 12px 0 0; color: #475569; font-size: 12px; line-height: 1.45; }}
         @media (max-width: 900px) {{
           header {{ padding: 22px 18px; }}
           main {{ padding: 18px; }}
-          .layout, .decision-grid {{ grid-template-columns: 1fr; }}
+          .layout, .decision-grid, .admission-grid, .admission-top {{ grid-template-columns: 1fr; }}
           .wide-table {{ min-width: 680px; }}
           h1 {{ font-size: 24px; }}
         }}
@@ -296,6 +325,12 @@ def render_dashboard(
           .decision-kpis div:last-child {{ grid-column: 1 / -1; border-top: 1px solid #e4e9f0; }}
           .stage-rail {{ grid-template-columns: 1fr; }}
           .stage-step {{ border-right: 0; }}
+          .admission-facts {{ grid-template-columns: 1fr; }}
+          .admission-facts div {{ border-right: 0; }}
+          .admission-facts div:nth-last-child(-n+2) {{ border-bottom: 1px solid #e4e9f0; }}
+          .admission-facts div:last-child {{ border-bottom: 0; }}
+          .flavor-step {{ grid-template-columns: 1fr; }}
+          .flavor-state {{ text-align: left; }}
         }}
       </style>
     </head>
@@ -343,6 +378,33 @@ def render_dashboard(
                 <div class="stage-step" data-policy-check="decision"><span>Airflow</span><strong>Release action</strong></div>
               </div>
               <div id="releaseChecks" class="check-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel admission-lab" data-testid="kueue-admission-path-lab">
+          <div class="admission-top">
+            <div>
+              <h2>Kueue Admission Path Lab</h2>
+              <p>Inspect how Concurrent Admission evaluates flavor variants, migration boundaries, and release safety for each workload class.</p>
+            </div>
+            <div class="select-wrap">
+              <label for="admissionScenario">Workload scenario</label>
+              <select id="admissionScenario"></select>
+            </div>
+          </div>
+          <div class="admission-grid">
+            <div class="admission-facts" aria-live="polite">
+              <div><span>Feature state</span><strong id="admissionFeatureState">n/a</strong></div>
+              <div><span>Migration mode</span><strong id="admissionMigrationMode">n/a</strong></div>
+              <div><span>ClusterQueue</span><strong id="admissionClusterQueue">n/a</strong></div>
+              <div><span>LocalQueue</span><strong id="admissionLocalQueue">n/a</strong></div>
+              <div><span>Started on</span><strong id="admissionStarted">n/a</strong></div>
+              <div><span>Target flavor</span><strong id="admissionTarget">n/a</strong></div>
+            </div>
+            <div>
+              <div id="flavorPath" class="flavor-path"></div>
+              <p id="admissionReason" class="admission-note">Select a scenario to inspect flavor-scoped checks.</p>
             </div>
           </div>
         </section>
@@ -455,6 +517,7 @@ def render_dashboard(
       </main>
       <script>
         const releaseSimulation = {release_payload};
+        const admissionData = {concurrent_payload};
         const byId = (id) => document.getElementById(id);
         const inputs = releaseSimulation.initial;
         byId("errorRate").value = inputs.error_rate_pct;
@@ -541,6 +604,62 @@ def render_dashboard(
 
         ["errorRate", "latencyP95", "queuedJobs", "availableSlots", "offlineGates", "featureHealthy"].forEach((id) => byId(id).addEventListener("input", renderReleasePolicy));
         renderReleasePolicy();
+
+        function admissionParent(name) {{
+          return admissionData.parent_workloads.find((item) => item.name === name) || {{variants: []}};
+        }}
+
+        function renderAdmissionPath() {{
+          const scenario = admissionData.scenarios.find((item) => item.workload === byId("admissionScenario").value) || admissionData.scenarios[0] || {{}};
+          const parent = admissionParent(scenario.workload);
+          byId("admissionFeatureState").textContent = admissionData.feature.state || "not planned";
+          byId("admissionMigrationMode").textContent = admissionData.feature.migration_mode || "not planned";
+          byId("admissionClusterQueue").textContent = scenario.cluster_queue || "n/a";
+          byId("admissionLocalQueue").textContent = scenario.local_queue || "n/a";
+          byId("admissionStarted").textContent = scenario.started_on || "n/a";
+          byId("admissionTarget").textContent = scenario.migrates_to || "n/a";
+          byId("admissionReason").textContent = scenario.business_reason || "No business reason recorded.";
+          const path = byId("flavorPath");
+          path.replaceChildren();
+          (parent.variants || []).forEach((variant) => {{
+            const row = document.createElement("div");
+            row.className = "flavor-step";
+            if (variant.resource_flavor === scenario.started_on) row.classList.add("current");
+            if (variant.resource_flavor === scenario.migrates_to) row.classList.add("target");
+            const flavor = document.createElement("span");
+            flavor.className = "flavor-name";
+            flavor.textContent = variant.resource_flavor;
+            const checks = document.createElement("div");
+            checks.className = "flavor-checks";
+            (variant.admission_checks || []).forEach((check) => {{
+              const chip = document.createElement("span");
+              chip.className = "flavor-check";
+              chip.textContent = check.replaceAll("-", " ");
+              checks.appendChild(chip);
+            }});
+            const state = document.createElement("span");
+            state.className = "flavor-state";
+            state.textContent = variant.resource_flavor === scenario.migrates_to
+              ? "preferred"
+              : (variant.resource_flavor === scenario.last_acceptable_flavor ? "last acceptable" : "variant");
+            row.append(flavor, checks, state);
+            path.appendChild(row);
+          }});
+        }}
+
+        function initializeAdmissionLab() {{
+          const select = byId("admissionScenario");
+          admissionData.scenarios.forEach((scenario) => {{
+            const option = document.createElement("option");
+            option.value = scenario.workload;
+            option.textContent = scenario.workload.replaceAll("-", " ");
+            select.appendChild(option);
+          }});
+          select.addEventListener("change", renderAdmissionPath);
+          renderAdmissionPath();
+        }}
+
+        initializeAdmissionLab();
       </script>
     </body>
     </html>
