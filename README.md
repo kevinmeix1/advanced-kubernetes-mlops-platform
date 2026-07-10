@@ -156,6 +156,8 @@ For Airflow 3 GitDagBundle configuration, DAG versioning, scheduler-managed back
 
 For Airflow 3.2 asset partitioning, partition-aware release DAGs, and scheduler-managed partition backfills, see [Airflow asset partitioning](docs/airflow-asset-partitioning.md).
 
+For Airflow 3.3 task/asset state stores, bounded rollup and fanout, runtime partitions, exception-aware retries, and a real SDK parse gate, see [Airflow stateful orchestration](docs/airflow-stateful-orchestration.md).
+
 For Airflow multi-team preview readiness with team-owned DAG Bundles, team-scoped pools/secrets, team triggerers, and asset-event filtering, see [Airflow multi-team readiness](docs/airflow-multi-team-readiness.md).
 
 For Airflow 3 AssetWatchers, `BaseEventTrigger` contracts, shared-stream polling, `AssetAlias`, and conditional release asset expressions, see [event-driven assets](docs/event-driven-assets.md).
