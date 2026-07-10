@@ -26,6 +26,7 @@ test = [
   "pandas==2.3.3",
 ]
 dev = ["ruff==0.15.21"]
+demo = ["edge-tts>=7,<8"]
 
 [build-system]
 requires = ["setuptools>=77"]

@@ -1,4 +1,4 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission mlflow-contract mlflow-metrics-contract test-mlflow lint-mlflow compose-config compose-up compose-observability-up compose-smoke compose-down ci-verify minikube-up kubernetes-plan test clean
+.PHONY: demo demo-voice demo-video train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission mlflow-contract mlflow-metrics-contract test-mlflow lint-mlflow compose-config compose-up compose-observability-up compose-smoke compose-down ci-verify minikube-up kubernetes-plan test clean
 
 PYTHON ?= python3
 MLFLOW_PORT ?= 5001
@@ -15,6 +15,12 @@ MLFLOW_FILES := \
 
 demo:
 	PYTHONPATH=src python3 -m kube_mlops_platform demo --output .local
+
+demo-voice:
+	$(PYTHON) tools/generate_demo_voice.py
+
+demo-video:
+	bash tools/build_demo_video.sh
 
 train:
 	PYTHONPATH=src python3 -m kube_mlops_platform train --output .local

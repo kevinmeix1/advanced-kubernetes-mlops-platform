@@ -14,6 +14,8 @@ unless the implementation matrix below says they are executed.
 
 ![Kubernetes MLOps dashboard](docs/screenshots/dashboard.png)
 
+[Watch the narrated judge demo](docs/demo/kubernetes-mlops-judge-demo.mp4) | [Follow the live demo script](docs/judge-demo.md)
+
 ## Implementation Status
 
 | Capability | Evidence | Status |
@@ -22,6 +24,7 @@ unless the implementation matrix below says they are executed.
 | MLflow registry | `make mlflow-contract`, MLflow 3.14 integration test | Executable against SQLite or an HTTP tracking server |
 | Containerized MLflow | `make compose-smoke` | Executed in GitHub Actions; Docker is unavailable on the development host |
 | Airflow orchestration | Airflow 3.3 SDK parse contract | DAGs parse against the real constrained SDK; no scheduler is deployed |
+| Interactive canary release lab | Browser-tested hold, advance, and rollback policy transitions | Executable locally |
 | KServe and Kubernetes | Manifests, policy tests, planning reports | Architecture lab; no cluster reconciliation claim |
 | Minikube | Documented bootstrap and apply commands | Operator-run path, not part of CI evidence |
 
@@ -61,6 +64,14 @@ make demo
 make test
 open .local/reports/mlops_platform_dashboard.html
 ```
+
+The Canary Release Lab begins on HOLD because the generated monitoring report
+contains observed feature drift. Mark the scenario drift check healthy to move
+all five controls to ADVANCE CANARY, then raise error rate to 6% to produce a
+12x error-budget burn and an explicit ROLLBACK. These browser decisions use the
+same emitted thresholds as the Python release-policy evaluator.
+
+![Responsive rollback decision](docs/screenshots/dashboard-mobile.png)
 
 The real MLflow path uses an isolated environment:
 
@@ -182,6 +193,8 @@ make test-mlflow          # MLflow integration regression test
 make lint-mlflow          # Ruff on the executable integration boundary
 make compose-smoke        # live HTTP MLflow server and metrics contract
 make airflow-sdk-contract # parse DAGs against Airflow 3.3
+make demo-voice           # generate natural neural narration in an isolated environment
+make demo-video           # assemble the committed hold/advance/rollback walkthrough
 make test                 # dependency-light suite
 ```
 

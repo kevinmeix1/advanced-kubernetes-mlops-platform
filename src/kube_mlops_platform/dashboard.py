@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import json
 from pathlib import Path
 
 
@@ -136,6 +137,28 @@ def render_dashboard(
     ]
     prediction_rows = monitoring_report.get("recent_predictions", [])[-12:]
     alerts = ", ".join(pretty(alert) for alert in monitoring_report.get("alerts", [])) or "none"
+    release_simulation = {
+        "thresholds": release_plan.get(
+            "thresholds",
+            {
+                "availability_slo": 0.995,
+                "latency_p95_ms": 50.0,
+                "error_budget_burn": 2.0,
+                "queue_pressure": 0.8,
+                "rollback_burn_rate": 8.0,
+                "rollback_error_rate": 0.05,
+            },
+        ),
+        "initial": {
+            "offline_gates": bool(gate_report.get("passed", False)),
+            "feature_healthy": bool(monitoring_report.get("feature_drift", {}).get("passed", True)),
+            "latency_p95_ms": float(monitoring_report.get("latency_ms", {}).get("p95", 0.0)),
+            "error_rate_pct": float(monitoring_report.get("error_rate", 0.0)) * 100,
+            "queued_jobs": int(queue_state.get("queued_jobs", 0)),
+            "available_slots": int(queue_state.get("available_slots", 1)),
+        },
+    }
+    release_payload = json.dumps(release_simulation, separators=(",", ":")).replace("</", "<\\/")
     body = f"""
     <!doctype html>
     <html lang="en">
@@ -201,12 +224,62 @@ def render_dashboard(
         .summary-item span {{ display: block; color: #64748b; font-size: 12px; margin-bottom: 8px; }}
         .summary-item strong {{ display: block; font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }}
         .summary-item.wide {{ grid-column: 1 / -1; }}
+        .decision-lab {{ border-left: 4px solid #0f766e; margin: 0 0 18px; }}
+        .decision-heading {{ display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 18px; }}
+        .decision-heading p {{ color: #64748b; font-size: 13px; line-height: 1.45; margin: 5px 0 0; }}
+        .decision-pill {{ min-width: 154px; border-radius: 6px; padding: 10px 14px; color: white; font-size: 13px; font-weight: 800; text-align: center; }}
+        .decision-pill.advance {{ background: #15803d; }}
+        .decision-pill.hold {{ background: #b45309; }}
+        .decision-pill.rollback {{ background: #b91c1c; }}
+        .decision-grid {{ display: grid; grid-template-columns: minmax(330px, .72fr) minmax(0, 1.28fr); gap: 22px; align-items: start; }}
+        .decision-controls {{ display: grid; gap: 13px; }}
+        .control-row {{ display: grid; grid-template-columns: 130px minmax(0, 1fr) 72px; align-items: center; gap: 10px; }}
+        .control-row label, .toggle-row > span {{ color: #475569; font-size: 12px; font-weight: 700; }}
+        .control-row input {{ width: 100%; accent-color: #0f766e; }}
+        .control-value {{ border-radius: 5px; background: #eef2f6; color: #0f172a; padding: 6px 7px; font-size: 12px; font-weight: 800; text-align: center; }}
+        .toggle-row {{ display: flex; min-height: 30px; align-items: center; justify-content: space-between; gap: 18px; }}
+        .switch {{ position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }}
+        .switch input {{ position: absolute; width: 1px; height: 1px; opacity: 0; }}
+        .switch-ui {{ position: relative; width: 40px; height: 22px; border-radius: 999px; background: #cbd5e1; transition: background .15s ease; }}
+        .switch-ui::after {{ content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; border-radius: 50%; background: white; box-shadow: 0 1px 2px rgba(15,23,42,.25); transition: transform .15s ease; }}
+        .switch input:checked + .switch-ui {{ background: #0f766e; }}
+        .switch input:checked + .switch-ui::after {{ transform: translateX(18px); }}
+        .switch input:focus-visible + .switch-ui {{ outline: 3px solid rgba(14,116,144,.22); outline-offset: 2px; }}
+        .switch-label {{ color: #334155; font-size: 12px; font-weight: 800; min-width: 54px; text-align: right; }}
+        .decision-kpis {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid #e4e9f0; border-radius: 6px; overflow: hidden; }}
+        .decision-kpis div {{ min-height: 72px; padding: 11px; background: #f8fafc; border-right: 1px solid #e4e9f0; }}
+        .decision-kpis div:last-child {{ border-right: 0; }}
+        .decision-kpis span {{ display: block; color: #64748b; font-size: 11px; margin-bottom: 7px; }}
+        .decision-kpis strong {{ display: block; font-size: 17px; }}
+        .decision-reason {{ min-height: 42px; color: #475569; font-size: 12px; line-height: 1.45; margin: 11px 0; }}
+        .stage-rail {{ display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid #dbe3ec; }}
+        .stage-step {{ min-width: 0; padding: 10px 9px; border-right: 1px solid #e4e9f0; border-bottom: 3px solid #94a3b8; }}
+        .stage-step:last-child {{ border-right: 0; }}
+        .stage-step.pass {{ border-bottom-color: #16a34a; }}
+        .stage-step.fail {{ border-bottom-color: #dc2626; }}
+        .stage-step.hold {{ border-bottom-color: #d97706; }}
+        .stage-step span {{ display: block; color: #64748b; font-size: 10px; text-transform: uppercase; margin-bottom: 4px; }}
+        .stage-step strong {{ display: block; font-size: 12px; overflow-wrap: anywhere; }}
+        .check-list {{ display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; margin-top: 10px; }}
+        .check-item {{ display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 7px; border-radius: 4px; background: #f8fafc; color: #475569; font-size: 10px; }}
+        .check-dot {{ width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: #16a34a; }}
+        .check-item.fail .check-dot {{ background: #dc2626; }}
         @media (max-width: 900px) {{
           header {{ padding: 22px 18px; }}
           main {{ padding: 18px; }}
-          .layout {{ grid-template-columns: 1fr; }}
+          .layout, .decision-grid {{ grid-template-columns: 1fr; }}
           .wide-table {{ min-width: 680px; }}
           h1 {{ font-size: 24px; }}
+        }}
+        @media (max-width: 620px) {{
+          .decision-heading {{ flex-direction: column; }}
+          .decision-pill {{ width: 100%; }}
+          .control-row {{ grid-template-columns: 104px minmax(0, 1fr) 64px; }}
+          .decision-kpis, .check-list {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+          .decision-kpis div:nth-child(2) {{ border-right: 0; }}
+          .decision-kpis div:last-child {{ grid-column: 1 / -1; border-top: 1px solid #e4e9f0; }}
+          .stage-rail {{ grid-template-columns: 1fr; }}
+          .stage-step {{ border-right: 0; }}
         }}
       </style>
     </head>
@@ -221,6 +294,41 @@ def render_dashboard(
           <div class="metric"><span>Gate status</span><strong>{badge(gate_report.get('passed', False))}</strong></div>
           <div class="metric"><span>KServe status</span><strong>{esc(deployment_state.get('status', 'not deployed'))}</strong></div>
           <div class="metric"><span>MLflow contract</span><strong>{contract_badge(mlflow_contract.get('passed'))}</strong></div>
+          <div class="metric"><span>Latency p95</span><strong>{esc(monitoring_report.get('latency_ms', {}).get('p95', 'n/a'))} ms</strong></div>
+          <div class="metric"><span>Observed feature drift</span><strong>{badge(monitoring_report.get('feature_drift', {}).get('passed', False))}</strong></div>
+        </section>
+
+        <section class="panel decision-lab" data-testid="canary-release-lab">
+          <div class="decision-heading">
+            <div><h2>Canary Release Lab</h2><p>Re-evaluate the generated Airflow, Kueue, KServe, and Prometheus release policy under live operating signals.</p></div>
+            <div id="releaseDecision" class="decision-pill hold" aria-live="polite">HOLD RELEASE</div>
+          </div>
+          <div class="decision-grid">
+            <div class="decision-controls">
+              <div class="control-row"><label for="errorRate">Error rate</label><input id="errorRate" type="range" min="0" max="8" step="0.1"><output id="errorRateValue" class="control-value">0.0%</output></div>
+              <div class="control-row"><label for="latencyP95">Latency p95</label><input id="latencyP95" type="range" min="0" max="120" step="0.01"><output id="latencyP95Value" class="control-value">0 ms</output></div>
+              <div class="control-row"><label for="queuedJobs">Queued jobs</label><input id="queuedJobs" type="range" min="0" max="32" step="1"><output id="queuedJobsValue" class="control-value">0 jobs</output></div>
+              <div class="control-row"><label for="availableSlots">Available slots</label><input id="availableSlots" type="range" min="1" max="16" step="1"><output id="availableSlotsValue" class="control-value">1 slot</output></div>
+              <div class="toggle-row"><span id="offlineGatesName">Offline quality gates</span><label class="switch"><input id="offlineGates" type="checkbox" aria-labelledby="offlineGatesName offlineGatesLabel"><span class="switch-ui"></span><span id="offlineGatesLabel" class="switch-label">PASS</span></label></div>
+              <div class="toggle-row"><span id="featureHealthyName">Feature drift checks</span><label class="switch"><input id="featureHealthy" type="checkbox" aria-labelledby="featureHealthyName featureHealthyLabel"><span class="switch-ui"></span><span id="featureHealthyLabel" class="switch-label">PASS</span></label></div>
+            </div>
+            <div>
+              <div class="decision-kpis">
+                <div><span>Error budget burn</span><strong id="releaseBurn">0.00x</strong></div>
+                <div><span>Kueue pressure</span><strong id="releasePressure">0%</strong></div>
+                <div><span>Failed checks</span><strong id="releaseFailedChecks">0 / 5</strong></div>
+              </div>
+              <p id="releaseReason" class="decision-reason"></p>
+              <div class="stage-rail" aria-label="Release decision path">
+                <div class="stage-step" data-policy-check="offline_gates"><span>Airflow</span><strong>Offline gates</strong></div>
+                <div class="stage-step" data-policy-check="queue_pressure"><span>Kueue</span><strong>Reserve quota</strong></div>
+                <div class="stage-step" data-policy-check="serving"><span>KServe</span><strong>Canary health</strong></div>
+                <div class="stage-step" data-policy-check="error_budget_burn"><span>Prometheus</span><strong>SLO budget</strong></div>
+                <div class="stage-step" data-policy-check="decision"><span>Airflow</span><strong>Release action</strong></div>
+              </div>
+              <div id="releaseChecks" class="check-list"></div>
+            </div>
+          </div>
         </section>
 
         <section class="layout">
@@ -294,6 +402,95 @@ def render_dashboard(
           </div>
         </section>
       </main>
+      <script>
+        const releaseSimulation = {release_payload};
+        const byId = (id) => document.getElementById(id);
+        const inputs = releaseSimulation.initial;
+        byId("errorRate").value = inputs.error_rate_pct;
+        byId("latencyP95").value = inputs.latency_p95_ms;
+        byId("queuedJobs").value = inputs.queued_jobs;
+        byId("availableSlots").value = inputs.available_slots;
+        byId("offlineGates").checked = inputs.offline_gates;
+        byId("featureHealthy").checked = inputs.feature_healthy;
+
+        function roundFour(value) {{
+          return Math.round(value * 10000) / 10000;
+        }}
+
+        function evaluateReleasePolicy() {{
+          const thresholds = releaseSimulation.thresholds;
+          const errorRatePct = Number(byId("errorRate").value);
+          const errorRate = errorRatePct / 100;
+          const latency = Number(byId("latencyP95").value);
+          const queued = Number(byId("queuedJobs").value);
+          const slots = Number(byId("availableSlots").value);
+          const burn = roundFour(errorRate / Math.max(1 - thresholds.availability_slo, 0.0001));
+          const pressure = roundFour(queued / Math.max(queued + slots, 1));
+          const checks = [
+            {{key: "offline_gates", label: "Offline gates", passed: byId("offlineGates").checked}},
+            {{key: "feature_drift", label: "Feature drift", passed: byId("featureHealthy").checked}},
+            {{key: "latency_p95", label: "Latency p95", passed: latency <= thresholds.latency_p95_ms}},
+            {{key: "error_budget_burn", label: "SLO burn", passed: burn <= thresholds.error_budget_burn}},
+            {{key: "queue_pressure", label: "Queue pressure", passed: pressure <= thresholds.queue_pressure}},
+          ];
+          let action = "hold";
+          if (burn >= thresholds.rollback_burn_rate || errorRate >= thresholds.rollback_error_rate) action = "rollback";
+          else if (checks.every((check) => check.passed)) action = "advance_canary";
+          return {{action, burn, pressure, errorRatePct, latency, queued, slots, checks}};
+        }}
+
+        function renderReleasePolicy() {{
+          const result = evaluateReleasePolicy();
+          byId("errorRateValue").textContent = result.errorRatePct.toFixed(1) + "%";
+          byId("latencyP95Value").textContent = result.latency.toFixed(2) + " ms";
+          byId("queuedJobsValue").textContent = result.queued + " jobs";
+          byId("availableSlotsValue").textContent = result.slots + (result.slots === 1 ? " slot" : " slots");
+          byId("offlineGatesLabel").textContent = byId("offlineGates").checked ? "PASS" : "FAIL";
+          byId("featureHealthyLabel").textContent = byId("featureHealthy").checked ? "PASS" : "FAIL";
+          byId("releaseBurn").textContent = result.burn.toFixed(2) + "x";
+          byId("releasePressure").textContent = (result.pressure * 100).toFixed(1) + "%";
+          const failed = result.checks.filter((check) => !check.passed);
+          byId("releaseFailedChecks").textContent = failed.length + " / " + result.checks.length;
+
+          const decision = byId("releaseDecision");
+          decision.className = "decision-pill " + (result.action === "advance_canary" ? "advance" : result.action);
+          decision.textContent = result.action === "advance_canary" ? "ADVANCE CANARY" : result.action === "rollback" ? "ROLLBACK" : "HOLD RELEASE";
+          byId("releaseReason").textContent = result.action === "rollback"
+            ? "Rollback threshold breached. Freeze promotion and restore the previous champion alias."
+            : failed.length
+              ? "Hold on " + failed.map((check) => check.label.toLowerCase()).join(", ") + "."
+              : "All five controls pass. Airflow may advance the KServe canary under the recorded approval operation.";
+
+          const passedByKey = Object.fromEntries(result.checks.map((check) => [check.key, check.passed]));
+          const stageStates = {{
+            offline_gates: passedByKey.offline_gates,
+            queue_pressure: passedByKey.queue_pressure,
+            serving: passedByKey.feature_drift && passedByKey.latency_p95,
+            error_budget_burn: passedByKey.error_budget_burn,
+          }};
+          document.querySelectorAll("[data-policy-check]").forEach((stage) => {{
+            const key = stage.dataset.policyCheck;
+            if (key === "decision") stage.className = "stage-step " + (result.action === "advance_canary" ? "pass" : result.action === "rollback" ? "fail" : "hold");
+            else stage.className = "stage-step " + (stageStates[key] ? "pass" : "fail");
+          }});
+
+          const checkList = byId("releaseChecks");
+          checkList.replaceChildren();
+          result.checks.forEach((check) => {{
+            const item = document.createElement("div");
+            item.className = "check-item" + (check.passed ? "" : " fail");
+            const label = document.createElement("span");
+            label.textContent = check.label;
+            const dot = document.createElement("span");
+            dot.className = "check-dot";
+            item.append(label, dot);
+            checkList.appendChild(item);
+          }});
+        }}
+
+        ["errorRate", "latencyP95", "queuedJobs", "availableSlots", "offlineGates", "featureHealthy"].forEach((id) => byId(id).addEventListener("input", renderReleasePolicy));
+        renderReleasePolicy();
+      </script>
     </body>
     </html>
     """

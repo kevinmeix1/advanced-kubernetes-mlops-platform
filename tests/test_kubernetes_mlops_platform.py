@@ -1129,6 +1129,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
 
             self.assertEqual(plan["recommended_action"], "advance_canary")
             self.assertEqual(plan["stages"][1]["system"], "kueue")
+            self.assertEqual(plan["thresholds"]["rollback_error_rate"], 0.05)
             self.assertTrue((root / "reports" / "release_control_plan.json").exists())
             self.assertEqual(rollback_policy["action"], "rollback")
 
@@ -1140,7 +1141,13 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue(result["evaluate"]["gate_report"]["passed"])
             self.assertTrue(result["evaluate"]["promotion"]["promoted"])
             self.assertEqual(health(root)["status"], "Ready")
-            self.assertTrue((root / "reports" / "mlops_platform_dashboard.html").exists())
+            dashboard_path = root / "reports" / "mlops_platform_dashboard.html"
+            self.assertTrue(dashboard_path.exists())
+            dashboard = dashboard_path.read_text(encoding="utf-8")
+            self.assertIn("Canary Release Lab", dashboard)
+            self.assertIn('data-testid="canary-release-lab"', dashboard)
+            self.assertIn("function evaluateReleasePolicy", dashboard)
+            self.assertIn('"rollback_error_rate":0.05', dashboard)
             self.assertTrue((root / "reports" / "index.html").exists())
             self.assertTrue((root / "reports" / "accelerator_capacity_plan.json").exists())
             self.assertTrue((root / "reports" / "device_allocation_plan.json").exists())

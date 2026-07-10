@@ -1,6 +1,7 @@
 .DS_Store
 .local/
 .venv/
+.demo-venv/
 __pycache__/
 *.pyc
 .pytest_cache/

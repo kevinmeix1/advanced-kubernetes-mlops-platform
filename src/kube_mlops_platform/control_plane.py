@@ -4,8 +4,21 @@ from pathlib import Path
 
 from .io import read_json, write_json
 
+RELEASE_THRESHOLDS = {
+    "availability_slo": 0.995,
+    "latency_p95_ms": 50.0,
+    "error_budget_burn": 2.0,
+    "queue_pressure": 0.80,
+    "rollback_burn_rate": 8.0,
+    "rollback_error_rate": 0.05,
+}
 
-def error_budget_burn_rate(error_rate: float, *, availability_slo: float = 0.995) -> float:
+
+def error_budget_burn_rate(
+    error_rate: float,
+    *,
+    availability_slo: float = RELEASE_THRESHOLDS["availability_slo"],
+) -> float:
     error_budget = max(1.0 - availability_slo, 0.0001)
     return round(error_rate / error_budget, 4)
 
@@ -28,11 +41,29 @@ def evaluate_release_policy(gate_report: dict, monitoring_report: dict, queue_st
     checks = [
         {"name": "offline_gates", "passed": gate_passed, "observed": gate_passed},
         {"name": "feature_drift", "passed": drift_passed, "observed": monitoring_report.get("feature_drift", {})},
-        {"name": "latency_p95", "passed": latency_p95 <= 50.0, "observed": latency_p95, "threshold": 50.0},
-        {"name": "error_budget_burn", "passed": burn <= 2.0, "observed": burn, "threshold": 2.0},
-        {"name": "queue_pressure", "passed": pressure <= 0.80, "observed": pressure, "threshold": 0.80},
+        {
+            "name": "latency_p95",
+            "passed": latency_p95 <= RELEASE_THRESHOLDS["latency_p95_ms"],
+            "observed": latency_p95,
+            "threshold": RELEASE_THRESHOLDS["latency_p95_ms"],
+        },
+        {
+            "name": "error_budget_burn",
+            "passed": burn <= RELEASE_THRESHOLDS["error_budget_burn"],
+            "observed": burn,
+            "threshold": RELEASE_THRESHOLDS["error_budget_burn"],
+        },
+        {
+            "name": "queue_pressure",
+            "passed": pressure <= RELEASE_THRESHOLDS["queue_pressure"],
+            "observed": pressure,
+            "threshold": RELEASE_THRESHOLDS["queue_pressure"],
+        },
     ]
-    if burn >= 8.0 or error_rate >= 0.05:
+    if (
+        burn >= RELEASE_THRESHOLDS["rollback_burn_rate"]
+        or error_rate >= RELEASE_THRESHOLDS["rollback_error_rate"]
+    ):
         action = "rollback"
     elif all(check["passed"] for check in checks):
         action = "advance_canary"
@@ -57,6 +88,7 @@ def build_release_plan(root: str | Path, *, queued_jobs: int = 2, available_slot
         "model": "churn-risk",
         "target": "kserve://mlops/churn-risk-predictor",
         "recommended_action": policy["action"],
+        "thresholds": dict(RELEASE_THRESHOLDS),
         "queue_state": queue_state,
         "policy": policy,
         "stages": [
