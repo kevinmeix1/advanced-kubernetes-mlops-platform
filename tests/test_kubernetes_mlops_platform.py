@@ -53,6 +53,7 @@ from kube_mlops_platform.registry import rollback
 from kube_mlops_platform.resource_health_status import build_resource_health_status_plan
 from kube_mlops_platform.resource_optimizer import build_resource_optimization_report
 from kube_mlops_platform.runtime_security import build_runtime_security_plan
+from kube_mlops_platform.scheduling_gate_controller import build_scheduling_gate_controller_plan
 from kube_mlops_platform.semantic_telemetry import build_semantic_telemetry_plan
 from kube_mlops_platform.serving import health
 from kube_mlops_platform.slo import build_slo_report
@@ -345,7 +346,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             "concurrency",
         ]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "scheduling_gate_controller_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
 
     def test_accelerator_capacity_plan_and_kubernetes_assets_exist(self) -> None:
@@ -837,6 +838,25 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["Pod Scheduling Readiness", "Dynamic Resource Allocation", "PodLevelResourceManagers"]:
             self.assertIn(expected, docs)
 
+    def test_scheduling_gate_controller_plan_and_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        manifest = (repo / "kubernetes" / "scheduling-gate-controller.yaml").read_text(encoding="utf-8")
+        docs = (repo / "docs" / "scheduling-gate-controller.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            report = build_scheduling_gate_controller_plan(root)
+
+            self.assertTrue(report["passed"])
+            self.assertEqual(report["recommended_action"], "run_scheduling_gate_controller")
+            self.assertEqual(report["summary"]["pods_released"], 2)
+            self.assertEqual(report["summary"]["stale_incidents"], 1)
+            self.assertTrue(any(item["action"] == "create_stale_gate_incident" for item in report["decisions"]))
+            self.assertTrue((root / "reports" / "scheduling_gate_controller_plan.json").exists())
+        for expected in ["mlops-scheduling-gate-controller", "pods/status", "resourceclaims", "MLOpsSchedulingGateStale", "mlops_scheduling_gate_age_seconds"]:
+            self.assertIn(expected, manifest)
+        for expected in ["Pod Scheduling Readiness", "DRA ResourceClaims", "fails closed", "stale-gate incidents"]:
+            self.assertIn(expected, docs)
+
     def test_inference_gateway_plan_and_kubernetes_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         manifest = (repo / "kubernetes" / "inference-gateway-routing.yaml").read_text(encoding="utf-8")
@@ -1013,6 +1033,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("airflow_multi_team_readiness", names)
             self.assertIn("airflow_event_driven_assets", names)
             self.assertIn("pod_resource_envelopes", names)
+            self.assertIn("scheduling_gate_controller", names)
             self.assertIn("kueue_cohort_fair_sharing", names)
             self.assertIn("kueue_flavor_fungibility", names)
             self.assertIn("kueue_pending_workload_visibility", names)
@@ -1086,6 +1107,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
                 "multi_team_readiness_plan.json",
                 "event_driven_assets_plan.json",
                 "pod_resource_envelope_plan.json",
+                "scheduling_gate_controller_plan.json",
                 "cohort_fair_sharing_plan.json",
                 "flavor_fungibility_plan.json",
                 "pending_workload_visibility_plan.json",
@@ -1170,6 +1192,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue((root / "reports" / "multi_team_readiness_plan.json").exists())
             self.assertTrue((root / "reports" / "event_driven_assets_plan.json").exists())
             self.assertTrue((root / "reports" / "pod_resource_envelope_plan.json").exists())
+            self.assertTrue((root / "reports" / "scheduling_gate_controller_plan.json").exists())
             self.assertTrue((root / "reports" / "cohort_fair_sharing_plan.json").exists())
             self.assertTrue((root / "reports" / "flavor_fungibility_plan.json").exists())
             self.assertTrue((root / "reports" / "pending_workload_visibility_plan.json").exists())

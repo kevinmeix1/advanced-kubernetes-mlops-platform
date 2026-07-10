@@ -67,6 +67,7 @@ def display_label(value: object) -> str:
     labels = {
         "churn-risk-predictor": "churn risk predictor",
         "kserve-sklearnserver": "KServe sklearn",
+        "fail_closed_keep_pod_scheduling_gated": "Fail closed",
     }
     return f'<span class="nowrap" title="{esc(text)}">{esc(labels.get(text, text))}</span>'
 
@@ -97,11 +98,15 @@ def render_dashboard(
     registry_metadata: dict,
     release_plan: dict | None = None,
     mlflow_contract: dict | None = None,
+    scheduling_gate_controller: dict | None = None,
 ) -> Path:
     release_plan = release_plan or {}
     mlflow_contract = mlflow_contract or {}
+    scheduling_gate_controller = scheduling_gate_controller or {}
     release_policy = release_plan.get("policy", {})
     queue_state = release_plan.get("queue_state", {})
+    gate_controller_summary = scheduling_gate_controller.get("summary", {})
+    gate_controller = scheduling_gate_controller.get("controller", {})
     mlflow_aliases = mlflow_contract.get("aliases", {})
     mlflow_versions = mlflow_contract.get("inventory", {}).get("versions", [])
     champion_registry_version = mlflow_aliases.get("champion")
@@ -386,6 +391,18 @@ def render_dashboard(
                 <div class="summary-item"><span>Error budget burn</span><strong>{esc(release_policy.get('error_budget_burn_rate', 'n/a'))}</strong></div>
                 <div class="summary-item"><span>Queue pressure</span><strong>{esc(release_policy.get('queue_pressure', 'n/a'))}</strong></div>
                 <div class="summary-item"><span>Kueue queue</span><strong>{esc(queue_state.get('queue', 'n/a'))}</strong></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h2>Scheduling Gate Controller</h2>
+              <div class="summary-grid">
+                <div class="summary-item"><span>Mode</span><strong>{display_label(gate_controller.get('failure_mode', 'not planned'))}</strong></div>
+                <div class="summary-item"><span>Leader election</span><strong>{badge(bool(gate_controller.get('leader_election')))}</strong></div>
+                <div class="summary-item"><span>Pods released</span><strong>{esc(gate_controller_summary.get('pods_released', 'n/a'))}</strong></div>
+                <div class="summary-item"><span>Gates removed</span><strong>{esc(gate_controller_summary.get('gates_removed', 'n/a'))}</strong></div>
+                <div class="summary-item"><span>Still gated</span><strong>{esc(gate_controller_summary.get('pods_still_gated', 'n/a'))}</strong></div>
+                <div class="summary-item"><span>Stale incidents</span><strong>{esc(gate_controller_summary.get('stale_incidents', 'n/a'))}</strong></div>
               </div>
             </div>
 

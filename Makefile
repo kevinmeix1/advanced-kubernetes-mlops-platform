@@ -1,4 +1,4 @@
-.PHONY: demo demo-voice demo-video train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission mlflow-contract mlflow-metrics-contract test-mlflow lint-mlflow compose-config compose-up compose-observability-up compose-smoke compose-down ci-verify minikube-up kubernetes-plan test clean
+.PHONY: demo demo-voice demo-video train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes scheduling-gate-controller cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission mlflow-contract mlflow-metrics-contract test-mlflow lint-mlflow compose-config compose-up compose-observability-up compose-smoke compose-down ci-verify minikube-up kubernetes-plan test clean
 
 PYTHON ?= python3
 MLFLOW_PORT ?= 5001
@@ -154,6 +154,9 @@ event-driven-assets:
 pod-resource-envelopes:
 	PYTHONPATH=src python3 -m kube_mlops_platform pod-resource-envelopes --output .local
 
+scheduling-gate-controller:
+	PYTHONPATH=src python3 -m kube_mlops_platform scheduling-gate-controller --output .local
+
 cohort-fair-sharing:
 	PYTHONPATH=src python3 -m kube_mlops_platform cohort-fair-sharing --output .local
 
@@ -268,6 +271,7 @@ ci-verify:
 	test -f .local/reports/multi_team_readiness_plan.json
 	test -f .local/reports/event_driven_assets_plan.json
 	test -f .local/reports/pod_resource_envelope_plan.json
+	test -f .local/reports/scheduling_gate_controller_plan.json
 	test -f .local/reports/cohort_fair_sharing_plan.json
 	test -f .local/reports/flavor_fungibility_plan.json
 	test -f .local/reports/pending_workload_visibility_plan.json
@@ -312,6 +316,7 @@ ci-verify:
 	python3 -m json.tool .local/reports/multi_team_readiness_plan.json >/dev/null
 	python3 -m json.tool .local/reports/event_driven_assets_plan.json >/dev/null
 	python3 -m json.tool .local/reports/pod_resource_envelope_plan.json >/dev/null
+	python3 -m json.tool .local/reports/scheduling_gate_controller_plan.json >/dev/null
 	python3 -m json.tool .local/reports/cohort_fair_sharing_plan.json >/dev/null
 	python3 -m json.tool .local/reports/flavor_fungibility_plan.json >/dev/null
 	python3 -m json.tool .local/reports/pending_workload_visibility_plan.json >/dev/null
@@ -357,6 +362,7 @@ minikube-up:
 	@echo "  kubectl apply -f kubernetes/provisioning-admission-checks.yaml"
 	@echo "  kubectl apply -f kubernetes/multikueue-dispatch.yaml"
 	@echo "  kubectl apply -f kubernetes/pod-resource-envelopes.yaml"
+	@echo "  kubectl apply -f kubernetes/scheduling-gate-controller.yaml"
 	@echo "  kubectl apply -f kubernetes/kueue-cohort-fair-sharing.yaml"
 	@echo "  kubectl apply -f kubernetes/kueue-flavor-fungibility.yaml"
 	@echo "  kubectl apply -f kubernetes/kueue-pending-workload-visibility.yaml"

@@ -193,6 +193,7 @@ make test-mlflow          # MLflow integration regression test
 make lint-mlflow          # Ruff on the executable integration boundary
 make compose-smoke        # live HTTP MLflow server and metrics contract
 make airflow-sdk-contract # parse DAGs against Airflow 3.3
+make scheduling-gate-controller # fail-closed Pod Scheduling Readiness controller evidence
 make demo-voice           # generate natural neural narration in an isolated environment
 make demo-video           # assemble the committed hold/advance/rollback walkthrough
 make test                 # dependency-light suite

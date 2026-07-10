@@ -55,6 +55,7 @@ from .registry import champion_metadata, promote_candidate, register_candidate, 
 from .resource_health_status import build_resource_health_status_plan
 from .resource_optimizer import build_resource_optimization_report
 from .runtime_security import build_runtime_security_plan
+from .scheduling_gate_controller import build_scheduling_gate_controller_plan
 from .semantic_telemetry import build_semantic_telemetry_plan
 from .serving import deploy_local_kserve, health, predict
 from .slo import build_slo_report
@@ -175,6 +176,7 @@ def monitor(output: str | Path) -> dict:
         monitoring_report=report,
         registry_metadata=champion_metadata(root),
         release_plan=release_plan,
+        scheduling_gate_controller=build_scheduling_gate_controller_plan(root),
     )
     return {"monitoring": report, "release_plan": release_plan, "dashboard": str(dashboard)}
 
@@ -241,6 +243,7 @@ def demo(output: str | Path) -> dict:
     multi_team_readiness = build_multi_team_readiness_plan(root)
     event_driven_assets = build_event_driven_assets_plan(root)
     pod_resource_envelopes = build_pod_resource_envelope_plan(root)
+    scheduling_gate_controller = build_scheduling_gate_controller_plan(root)
     cohort_fair_sharing = build_cohort_fair_sharing_plan(root)
     flavor_fungibility = build_flavor_fungibility_plan(root)
     pending_workload_visibility = build_pending_workload_visibility_plan(root)
@@ -310,6 +313,7 @@ def demo(output: str | Path) -> dict:
         "multi_team_readiness": multi_team_readiness,
         "event_driven_assets": event_driven_assets,
         "pod_resource_envelopes": pod_resource_envelopes,
+        "scheduling_gate_controller": scheduling_gate_controller,
         "cohort_fair_sharing": cohort_fair_sharing,
         "flavor_fungibility": flavor_fungibility,
         "pending_workload_visibility": pending_workload_visibility,
@@ -379,6 +383,7 @@ def main(argv: list[str] | None = None) -> int:
         "multi-team-readiness",
         "event-driven-assets",
         "pod-resource-envelopes",
+        "scheduling-gate-controller",
         "cohort-fair-sharing",
         "flavor-fungibility",
         "pending-workload-visibility",
@@ -488,6 +493,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_event_driven_assets_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "pod-resource-envelopes":
         print(json.dumps(build_pod_resource_envelope_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "scheduling-gate-controller":
+        print(json.dumps(build_scheduling_gate_controller_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "cohort-fair-sharing":
         print(json.dumps(build_cohort_fair_sharing_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "flavor-fungibility":

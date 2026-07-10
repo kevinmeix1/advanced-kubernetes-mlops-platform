@@ -46,6 +46,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("Multi-Team Readiness", "multi_team_readiness_plan.json", "Airflow multi-team preview readiness for team-owned DAG Bundles, pools, triggerers, secrets, executors, and asset filtering."),
         ("Event-Driven Assets", "event_driven_assets_plan.json", "Airflow 3 AssetWatchers, BaseEventTrigger contracts, shared-stream polling, and conditional release asset expressions."),
         ("Pod Resource Envelopes", "pod_resource_envelope_plan.json", "Kubernetes pod-level resources, scheduling gates, DRA fit checks, and scheduler-churn observability."),
+        ("Scheduling Gate Controller", "scheduling_gate_controller_plan.json", "Fail-closed Pod Scheduling Readiness controller for release evidence, Kueue admission, model cache, Gateway route, and DRA allocation."),
         ("Cohort Fair Sharing", "cohort_fair_sharing_plan.json", "Kueue Fair Sharing, Admission Fair Sharing, borrowing/lending limits, weights, and preemption guardrails."),
         ("Flavor Fungibility", "flavor_fungibility_plan.json", "Kueue ResourceFlavor fallback, TryNextFlavor policies, explicit borrowing/preemption preference, and spot/on-demand trade-offs."),
         ("Pending Workload Visibility", "pending_workload_visibility_plan.json", "Kueue VisibilityOnDemand, pending workload RBAC, queue triage endpoints, APF setup, and admission-wait alerts."),

@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mlops-scheduling-gate-controller
+  namespace: mlops-system
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: scheduling-gate-controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mlops-scheduling-gate-controller
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods/status"]
+    verbs: ["patch"]
+  - apiGroups: ["kueue.x-k8s.io"]
+    resources: ["workloads"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["resource.k8s.io"]
+    resources: ["resourceclaims"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["serving.kserve.io"]
+    resources: ["inferenceservices"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["events.k8s.io"]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mlops-scheduling-gate-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mlops-scheduling-gate-controller
+subjects:
+  - kind: ServiceAccount
+    name: mlops-scheduling-gate-controller
+    namespace: mlops-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-scheduling-gate-controller
+  namespace: mlops-system
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: scheduling-gate-controller
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubernetes-mlops-platform
+      app.kubernetes.io/component: scheduling-gate-controller
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubernetes-mlops-platform
+        app.kubernetes.io/component: scheduling-gate-controller
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      serviceAccountName: mlops-scheduling-gate-controller
+      priorityClassName: mlops-release-critical
+      containers:
+        - name: controller
+          image: ghcr.io/kevinmeix1/advanced-kubernetes-mlops-platform:2026.07.0
+          command: ["python", "-m", "kube_mlops_platform", "scheduling-gate-controller"]
+          env:
+            - name: RECONCILE_INTERVAL_SECONDS
+              value: "15"
+            - name: FAILURE_MODE
+              value: fail_closed_keep_pod_scheduling_gated
+            - name: IDEMPOTENCY_KEY
+              value: metadata.uid+schedulingGate.name+evidence.digest
+          ports:
+            - name: metrics
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 750m
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mlops-scheduling-gate-controller
+  namespace: mlops-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubernetes-mlops-platform
+      app.kubernetes.io/component: scheduling-gate-controller
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mlops-scheduling-gate-controller
+  namespace: mlops-system
+spec:
+  groups:
+    - name: mlops.scheduling-gates
+      rules:
+        - alert: MLOpsSchedulingGateStale
+          expr: max(mlops_scheduling_gate_age_seconds) > 1800
+          for: 10m
+          labels:
+            severity: warning
+            team: ml-platform
+          annotations:
+            summary: A release pod has stayed SchedulingGated past its SLO.
+        - alert: MLOpsSchedulingGatePatchErrors
+          expr: rate(mlops_scheduling_gate_patch_errors_total[5m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            team: ml-platform
+          annotations:
+            summary: Scheduling gate controller cannot patch pod status.
