@@ -19,8 +19,9 @@ COPY requirements-mlflow.lock ./
 
 RUN python -m pip install --upgrade "pip==25.3" \
     && python -m pip install --constraint requirements-mlflow.lock \
-        "mlflow==3.14.0" "pandas==2.3.3" \
-    && python -m pip check
+        "mlflow==3.14.0" "pandas==2.3.3" "prometheus-flask-exporter==0.23.2" \
+    && python -m pip check \
+    && python -c "from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics"
 
 USER 65532:65532
 

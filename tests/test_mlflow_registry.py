@@ -18,6 +18,13 @@ except ImportError:
     "MLflow runtime dependencies are not installed",
 )
 class MLflowRegistryIntegrationTest(unittest.TestCase):
+    def test_prometheus_exporter_runtime_is_installed(self) -> None:
+        from prometheus_flask_exporter.multiprocess import (
+            GunicornInternalPrometheusMetrics,
+        )
+
+        self.assertIsNotNone(GunicornInternalPrometheusMetrics)
+
     def test_database_registry_aliases_idempotency_and_rollback(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

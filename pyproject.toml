@@ -1,6 +1,6 @@
 [project]
 name = "kubernetes-mlops-platform"
-version = "0.2.0"
+version = "0.2.1"
 requires-python = ">=3.11"
 dependencies = []
 
@@ -19,6 +19,7 @@ airflow33 = ["apache-airflow==3.3.0"]
 mlflow3 = [
   "mlflow==3.14.0",
   "pandas==2.3.3",
+  "prometheus-flask-exporter==0.23.2",
 ]
 test = [
   "mlflow==3.14.0",

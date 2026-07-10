@@ -119,6 +119,7 @@ The Compose path uses:
 - DNS-rebinding and CORS allowlists
 - a non-root process, read-only root filesystem, dropped capabilities, PID and resource limits
 - MLflow's Prometheus endpoint, with an optional Prometheus profile
+- an explicit exporter dependency and import preflight for that metrics endpoint
 
 SQLite is deliberate for this single-node integration test. PostgreSQL and
 object storage are the production migration, not hidden Compose dependencies.
