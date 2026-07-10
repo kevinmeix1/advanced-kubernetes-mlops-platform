@@ -247,6 +247,8 @@ compose-down:
 
 ci-verify:
 	PYTHONPATH=src python3 -m compileall -q src tests
+	test -f docs/demo/kubernetes-mlops-judge-demo.mp4
+	test $$(wc -c < docs/demo/kubernetes-mlops-judge-demo.mp4) -gt 1000000
 	test -f .local/reports/mlops_platform_dashboard.html
 	test -f .local/reports/index.html
 	test -f .local/reports/governance_evidence_bundle.json
