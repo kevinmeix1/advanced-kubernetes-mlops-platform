@@ -72,6 +72,7 @@ open .local/reports/mlops_platform_dashboard.html
 open .local/reports/judge_demo_cockpit.html
 open .local/reports/operator_drill_lab.html
 open .local/reports/reliability_signal_mesh.html
+open .local/reports/narrated_demo_studio.html
 ```
 
 ![Judge demo cockpit](docs/screenshots/dashboard-judge-cockpit.jpg)
@@ -83,6 +84,12 @@ resource attributes, Kueue admission pressure, SLO burn, and fail-closed release
 decisions into one operator-facing evidence graph.
 
 ![Reliability signal mesh](docs/screenshots/dashboard-reliability-signal-mesh.png)
+
+The Narrated Demo Studio turns the evidence bundle into a judge-facing chapter
+timeline with natural voice backends, Remotion props, subtitle timing, and
+evidence-linked visuals.
+
+![Narrated demo studio](docs/screenshots/dashboard-narrated-demo-studio.png)
 
 The Canary Release Lab begins on HOLD because the generated monitoring report
 contains observed feature drift. Mark the scenario drift check healthy to move

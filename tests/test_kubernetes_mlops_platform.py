@@ -22,6 +22,7 @@ from kube_mlops_platform.cost_observability import build_cost_observability_repo
 from kube_mlops_platform.data import generate_churn_dataset, split_rows
 from kube_mlops_platform.dag_bundle_versioning import build_dag_bundle_versioning_plan
 from kube_mlops_platform.demo_cockpit import build_judge_demo_cockpit, build_operator_drill_lab
+from kube_mlops_platform.narrated_demo_studio import build_narrated_demo_studio
 from kube_mlops_platform.deadline_alerts import build_deadline_alert_plan
 from kube_mlops_platform.disaster_recovery import build_disaster_recovery_plan
 from kube_mlops_platform.device_allocation import build_device_allocation_plan
@@ -366,7 +367,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             "concurrency",
         ]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "operational_readiness_review.json", "judge_demo_cockpit.html", "judge_demo_cockpit_manifest.json", "operator_drill_lab.html", "operator_drill_report.json", "reliability_signal_mesh.html", "reliability_signal_mesh.json", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "concurrent_admission_plan.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "scheduling_gate_controller_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "kserve_canary_readiness_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "operational_readiness_review.json", "judge_demo_cockpit.html", "judge_demo_cockpit_manifest.json", "operator_drill_lab.html", "operator_drill_report.json", "reliability_signal_mesh.html", "reliability_signal_mesh.json", "narrated_demo_studio.html", "narrated_demo_studio.json", "remotion_demo_props.json", "narrated_demo_subtitle_plan.srt", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "concurrent_admission_plan.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "scheduling_gate_controller_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "kserve_canary_readiness_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
 
     def test_operational_readiness_review_aggregates_release_evidence(self) -> None:
@@ -413,6 +414,26 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual([step["phase"] for step in drill["timeline"]], ["detect", "triage", "contain", "recover", "learn"])
             self.assertIn("Postmortem Contract", html)
             self.assertTrue((root / "reports" / "operator_drill_report.json").exists())
+
+    def test_narrated_demo_studio_generates_video_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            studio = build_narrated_demo_studio(
+                root,
+                project_name="Kubernetes MLOps Platform",
+                domain="Model release and Kubernetes operations",
+                primary_dashboard="mlops_platform_dashboard.html",
+                demo_video="../../docs/demo/kubernetes-mlops-judge-demo.mp4",
+            )
+            html = (root / "reports" / "narrated_demo_studio.html").read_text(encoding="utf-8")
+            props = read_json(root / "reports" / "remotion_demo_props.json")
+            self.assertEqual(result["narrated_demo_studio"]["status"], "ready")
+            self.assertEqual(studio["total_duration_seconds"], 174)
+            self.assertIn("kokoro_local", {item["name"] for item in studio["natural_voice_backends"]})
+            self.assertIn("Remotion props", html)
+            self.assertEqual(props["durationInFrames"], 5220)
+            self.assertTrue((root / "reports" / "narrated_demo_subtitle_plan.srt").exists())
 
     def test_reliability_signal_mesh_connects_operating_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
