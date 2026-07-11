@@ -56,6 +56,7 @@ from .pod_resource_envelopes import build_pod_resource_envelope_plan
 from .provisioning_admission import build_provisioning_admission_plan
 from .queue_simulator import build_queue_simulation
 from .release_admission import build_release_admission_decision
+from .reliability_signal_mesh import build_reliability_signal_mesh
 from .registry import champion_metadata, promote_candidate, register_candidate, rollback as rollback_model, log_mlflow_run
 from .resource_health_status import build_resource_health_status_plan
 from .resource_optimizer import build_resource_optimization_report
@@ -298,6 +299,12 @@ def demo(output: str | Path) -> dict:
         primary_dashboard="mlops_platform_dashboard.html",
         runbook="../../docs/runbook.md",
     )
+    reliability_signal_mesh = build_reliability_signal_mesh(
+        root,
+        project_name="Kubernetes MLOps Platform",
+        domain="Model release and Kubernetes operations",
+        primary_dashboard="mlops_platform_dashboard.html",
+    )
     artifact_index = render_artifact_index(
         root,
         title="Kubernetes MLOps Platform",
@@ -367,6 +374,7 @@ def demo(output: str | Path) -> dict:
         "kserve_canary_readiness": kserve_canary_readiness,
         "judge_demo_cockpit": judge_demo_cockpit,
         "operator_drill": operator_drill,
+        "reliability_signal_mesh": reliability_signal_mesh,
         "artifact_index": str(artifact_index),
         "orchestration_scorecard": orchestration_scorecard,
         "supply_chain": supply_chain,

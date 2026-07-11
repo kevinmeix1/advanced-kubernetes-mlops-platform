@@ -71,11 +71,18 @@ make test
 open .local/reports/mlops_platform_dashboard.html
 open .local/reports/judge_demo_cockpit.html
 open .local/reports/operator_drill_lab.html
+open .local/reports/reliability_signal_mesh.html
 ```
 
 ![Judge demo cockpit](docs/screenshots/dashboard-judge-cockpit.jpg)
 
 ![Operator drill lab](docs/screenshots/dashboard-operator-drill.png)
+
+The Reliability Signal Mesh connects Airflow asset events, OpenTelemetry
+resource attributes, Kueue admission pressure, SLO burn, and fail-closed release
+decisions into one operator-facing evidence graph.
+
+![Reliability signal mesh](docs/screenshots/dashboard-reliability-signal-mesh.png)
 
 The Canary Release Lab begins on HOLD because the generated monitoring report
 contains observed feature drift. Mark the scenario drift check healthy to move

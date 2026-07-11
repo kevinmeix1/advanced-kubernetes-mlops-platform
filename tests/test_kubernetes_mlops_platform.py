@@ -54,6 +54,7 @@ from kube_mlops_platform.pod_resource_envelopes import build_pod_resource_envelo
 from kube_mlops_platform.provisioning_admission import build_provisioning_admission_plan
 from kube_mlops_platform.queue_simulator import build_queue_simulation
 from kube_mlops_platform.release_admission import build_release_admission_decision, evaluate_release_admission
+from kube_mlops_platform.reliability_signal_mesh import build_reliability_signal_mesh
 from kube_mlops_platform.registry import rollback
 from kube_mlops_platform.resource_health_status import build_resource_health_status_plan
 from kube_mlops_platform.resource_optimizer import build_resource_optimization_report
@@ -365,7 +366,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             "concurrency",
         ]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "operational_readiness_review.json", "judge_demo_cockpit.html", "judge_demo_cockpit_manifest.json", "operator_drill_lab.html", "operator_drill_report.json", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "concurrent_admission_plan.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "scheduling_gate_controller_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "kserve_canary_readiness_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "operational_readiness_review.json", "judge_demo_cockpit.html", "judge_demo_cockpit_manifest.json", "operator_drill_lab.html", "operator_drill_report.json", "reliability_signal_mesh.html", "reliability_signal_mesh.json", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "concurrent_admission_plan.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "scheduling_gate_controller_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "kserve_canary_readiness_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
 
     def test_operational_readiness_review_aggregates_release_evidence(self) -> None:
@@ -412,6 +413,24 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual([step["phase"] for step in drill["timeline"]], ["detect", "triage", "contain", "recover", "learn"])
             self.assertIn("Postmortem Contract", html)
             self.assertTrue((root / "reports" / "operator_drill_report.json").exists())
+
+    def test_reliability_signal_mesh_connects_operating_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            mesh = build_reliability_signal_mesh(
+                root,
+                project_name="Kubernetes MLOps Platform",
+                domain="release mesh",
+                primary_dashboard="mlops_platform_dashboard.html",
+            )
+            html = (root / "reports" / "reliability_signal_mesh.html").read_text(encoding="utf-8")
+            self.assertEqual(result["reliability_signal_mesh"]["status"], "ready")
+            self.assertEqual(mesh["readiness_score"], 100.0)
+            self.assertIn("slo.burn_rate", mesh["semantic_contract"])
+            self.assertEqual(len(mesh["edges"]), 5)
+            self.assertIn("Reliability Signal Mesh", html)
+            self.assertTrue((root / "reports" / "reliability_signal_mesh.json").exists())
 
     def test_accelerator_capacity_plan_and_kubernetes_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
@@ -1257,6 +1276,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
                 "dag_bundle_versioning_plan.json",
                 "asset_partitioning_plan.json",
                 "airflow_stateful_orchestration_plan.json",
+                "reliability_signal_mesh.html",
                 "multi_team_readiness_plan.json",
                 "event_driven_assets_plan.json",
                 "pod_resource_envelope_plan.json",

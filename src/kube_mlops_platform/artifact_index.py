@@ -44,6 +44,7 @@ def render_artifact_index(root: str | Path, *, title: str, description: str, das
         ("DAG Bundle Versioning", "dag_bundle_versioning_plan.json", "Airflow 3 GitDagBundle versioning, rerun semantics, backfill policy, and incident replay guardrails."),
         ("Asset Partitioning", "asset_partitioning_plan.json", "Airflow 3.2 partitioned assets, partition-aware release DAGs, scheduler-managed partition backfills, and partition-key lineage."),
         ("Stateful Orchestration", "airflow_stateful_orchestration_plan.json", "Airflow 3.3 task/asset state stores, bounded rollup and fanout, runtime partitions, retry policies, and real SDK validation."),
+        ("Reliability Signal Mesh", "reliability_signal_mesh.html", "Operator-facing mesh that connects Airflow assets, OTel attributes, Kueue admission, SLO burn, and fail-closed release decisions."),
         ("Multi-Team Readiness", "multi_team_readiness_plan.json", "Airflow multi-team preview readiness for team-owned DAG Bundles, pools, triggerers, secrets, executors, and asset filtering."),
         ("Event-Driven Assets", "event_driven_assets_plan.json", "Airflow 3 AssetWatchers, BaseEventTrigger contracts, shared-stream polling, and conditional release asset expressions."),
         ("Pod Resource Envelopes", "pod_resource_envelope_plan.json", "Kubernetes pod-level resources, scheduling gates, DRA fit checks, and scheduler-churn observability."),
