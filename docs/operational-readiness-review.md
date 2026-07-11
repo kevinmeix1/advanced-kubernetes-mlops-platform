@@ -6,7 +6,7 @@ The review aggregates release admission, SLO burn rate, AI workload telemetry, p
 
 The packet is intentionally fail-closed. A missing release decision, paging-level burn rate, missing provenance, incomplete telemetry dimensions, or failed performance guardrail lowers the readiness score and returns a remediation action instead of approving the release.
 
-Judge demo talking points:
+Interview review prompts:
 
 - Promotion is based on evidence, not a static checklist.
 - Airflow assets, KServe rollout state, Kubernetes resource telemetry, MLflow provenance, and rollback capacity are reviewed together.

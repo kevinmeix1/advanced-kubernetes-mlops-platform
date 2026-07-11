@@ -316,7 +316,7 @@ def demo(output: str | Path) -> dict:
     artifact_index = render_artifact_index(
         root,
         title="Kubernetes MLOps Platform",
-        description="Reviewer landing page for generated dashboard, governance evidence, SLOs, migration, and reliability artifacts.",
+        description="Generated registry for release controls, governance records, SLO budgets, capacity plans, and recovery evidence.",
         dashboard="mlops_platform_dashboard.html",
     )
     orchestration_scorecard = build_orchestration_scorecard(root, project="Kubernetes MLOps Platform")

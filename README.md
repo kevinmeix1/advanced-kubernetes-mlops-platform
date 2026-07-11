@@ -2,7 +2,7 @@
 
 [![Kubernetes MLOps CI](https://github.com/kevinmeix1/advanced-kubernetes-mlops-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/kevinmeix1/advanced-kubernetes-mlops-platform/actions/workflows/ci.yml)
 
-A local-first model lifecycle and release-control portfolio project. The fast
+A local-first reference implementation for model lifecycle and release control. The fast
 path demonstrates deterministic training, evaluation gates, promotion,
 prediction, monitoring, and rollback. A separate integration path exercises a
 real MLflow 3 registry with SQL metadata, model signatures, dataset lineage,
@@ -14,15 +14,19 @@ unless the implementation matrix below says they are executed.
 
 ![Kubernetes MLOps dashboard](docs/screenshots/dashboard.png)
 
-[Watch the narrated judge demo](docs/demo/kubernetes-mlops-judge-demo.mp4) | [Follow the live demo script](docs/judge-demo.md)
+[Watch the narrated operations review](docs/demo/kubernetes-mlops-judge-demo.mp4) | [Follow the run-review notes](docs/judge-demo.md)
 
 For a study-oriented walkthrough with the full architecture diagram,
 step-by-step screenshot guide, code reading order, and interview explanations,
 start with [the project study guide](docs/study-guide.md).
 
-![Judge evidence deck](docs/screenshots/dashboard-evidence-deck.png)
+The UI is governed by an offline, tested operator-console system. Its rationale,
+open-source references, accessibility contract, and review checklist are in the
+[design-system notes](docs/design-system.md).
 
-![Judge demo theater](docs/screenshots/dashboard-demo-theater.png)
+![Release evidence](docs/screenshots/dashboard-evidence-deck.png)
+
+![Run review](docs/screenshots/dashboard-demo-theater.png)
 
 ## Implementation Status
 
@@ -79,7 +83,7 @@ open .local/reports/reliability_signal_mesh.html
 open .local/reports/narrated_demo_studio.html
 ```
 
-![Judge demo cockpit](docs/screenshots/dashboard-judge-cockpit.jpg)
+![Operations review](docs/screenshots/study-02-judge-cockpit.png)
 
 ![Operator drill lab](docs/screenshots/dashboard-operator-drill.png)
 
@@ -89,11 +93,11 @@ decisions into one operator-facing evidence graph.
 
 ![Reliability signal mesh](docs/screenshots/dashboard-reliability-signal-mesh.png)
 
-The Narrated Demo Studio turns the evidence bundle into a judge-facing chapter
+The Narrated Run Review turns the evidence bundle into an operator-facing chapter
 timeline with natural voice backends, Remotion props, subtitle timing, and
 evidence-linked visuals.
 
-![Narrated demo studio](docs/screenshots/dashboard-narrated-demo-studio.png)
+![Narrated run review](docs/screenshots/dashboard-narrated-demo-studio.png)
 
 The Canary Release Lab begins on HOLD because the generated monitoring report
 contains observed feature drift. Mark the scenario drift check healthy to move
@@ -106,23 +110,14 @@ same emitted thresholds as the Python release-policy evaluator.
 The dashboard also includes a KServe canary readiness panel for server-side
 apply dry-run, field-manager ownership, and Argo analysis evidence.
 
-![KServe canary readiness panel](docs/screenshots/dashboard-kserve-canary-readiness.png)
-
 It also includes a Kueue Concurrent Admission panel that summarizes preferred
 flavor migration, Parent/Variant Workload evidence, and alpha feature-gate
 guardrails. See [Kueue Concurrent Admission](docs/kueue-concurrent-admission.md).
-
-![Kueue Concurrent Admission dashboard panel](docs/screenshots/dashboard-concurrent-admission.png)
-
-Mobile capture: [dashboard-concurrent-admission-mobile.png](docs/screenshots/dashboard-concurrent-admission-mobile.png)
 
 The Kueue Admission Path Lab lets reviewers switch workload scenarios and see
 preferred flavors, last-acceptable flavor boundaries, and flavor-scoped checks
 without reading the manifest first.
 
-![Kueue admission path lab](docs/screenshots/dashboard-admission-path-lab.png)
-
-Mobile capture: [dashboard-admission-path-lab-mobile.png](docs/screenshots/dashboard-admission-path-lab-mobile.png)
 
 The real MLflow path uses an isolated environment:
 

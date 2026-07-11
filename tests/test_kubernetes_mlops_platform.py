@@ -395,7 +395,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             html = (root / "reports" / "judge_demo_cockpit.html").read_text(encoding="utf-8")
             self.assertEqual(result["judge_demo_cockpit"]["scenario_count"], 4)
             self.assertGreaterEqual(cockpit["evidence_count"], 8)
-            self.assertIn("Judge Demo Cockpit", html)
+            self.assertIn("Operations Review", html)
             self.assertIn("Evidence Filters", html)
 
     def test_operator_drill_lab_rehearses_failure_recovery(self) -> None:
@@ -1361,10 +1361,10 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue(dashboard_path.exists())
             dashboard = dashboard_path.read_text(encoding="utf-8")
             self.assertIn("Canary Release Lab", dashboard)
-            self.assertIn("Judge Evidence Deck", dashboard)
-            self.assertIn('data-testid="judge-evidence-deck"', dashboard)
-            self.assertIn("Judge Demo Theater", dashboard)
-            self.assertIn('data-testid="demo-theater"', dashboard)
+            self.assertIn("Release Evidence", dashboard)
+            self.assertIn('data-testid="release-evidence"', dashboard)
+            self.assertIn("Run Review", dashboard)
+            self.assertIn('data-testid="run-review"', dashboard)
             self.assertIn("edge-tts neural narration", dashboard)
             self.assertIn("function renderDemoTheater", dashboard)
             self.assertIn("MLflow alias rollback is exercised", dashboard)

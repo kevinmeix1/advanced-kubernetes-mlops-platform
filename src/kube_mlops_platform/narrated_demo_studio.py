@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .io import read_json, write_json
+from .operator_console import decorate_console
 
 
 def _esc(value: object) -> str:
@@ -39,11 +40,11 @@ def build_narrated_demo_studio(
     script_path = (reports / narration_script).resolve()
     chapters = [
         {
-            "chapter": "Open With The Production Claim",
+            "chapter": "Establish The Operating Boundary",
             "duration_seconds": 28,
             "visual": primary_dashboard,
-            "voice_note": "Calm, confident, judge-facing introduction.",
-            "script": f"This is {project_name}. The goal is to show production behavior, not a toy notebook: {domain}.",
+            "voice_note": "Calm, confident, operations-review introduction.",
+            "script": f"This review follows {project_name} across its production control path: {domain}.",
         },
         {
             "chapter": "Show The Evidence Map",
@@ -170,7 +171,7 @@ def _write_html(path: Path, manifest: dict) -> Path:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{_esc(manifest["project"])} Narrated Demo Studio</title>
+  <title>{_esc(manifest["project"])} Narrated Run Review</title>
   <style>
     * {{ box-sizing: border-box; }}
     body {{ margin: 0; background: #f6f8fb; color: #172026; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }}
@@ -204,8 +205,8 @@ def _write_html(path: Path, manifest: dict) -> Path:
 </head>
 <body>
   <header>
-    <h1>{_esc(manifest["project"])} Narrated Demo Studio</h1>
-    <p>A judge-facing video plan with chapter timing, dashboard shots, evidence-backed narration, natural voice options, Remotion props, and subtitle planning.</p>
+    <h1>{_esc(manifest["project"])} Narrated Run Review</h1>
+    <p>A timed operations review with chapter sequencing, evidence-linked visuals, natural voice options, Remotion props, and subtitle timing.</p>
   </header>
   <main>
     <section class="hero">
@@ -245,5 +246,5 @@ def _write_html(path: Path, manifest: dict) -> Path:
 </html>
 """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(body, encoding="utf-8")
+    path.write_text(decorate_console(body, active="studio"), encoding="utf-8")
     return path

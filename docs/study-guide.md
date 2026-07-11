@@ -1,6 +1,8 @@
 # Study Guide: Kubernetes-Native MLOps Platform
 
-This guide is the reviewer path for understanding the whole project. It explains what runs locally, what is a Kubernetes architecture lab, how the artifacts fit together, and how to talk about the design in an interview.
+This guide is the learning path for the whole project. It explains what runs locally, what is a Kubernetes architecture lab, how the artifacts fit together, and how to discuss the design in an interview.
+
+The generated app follows the tested [KubeOps design contract](design-system.md), including its offline rendering, accessibility, and responsive QA rules.
 
 ## Full Architecture
 
@@ -32,8 +34,8 @@ flowchart TB
   subgraph OBS["Observability and demo layer"]
     TELEMETRY["OpenTelemetry-style resource attributes"] --> MESH["Reliability Signal Mesh"]
     MESH --> DASH["Main dashboard"]
-    DASH --> COCKPIT["Judge demo cockpit"]
-    COCKPIT --> NARRATED["Narrated Demo Studio"]
+    DASH --> COCKPIT["Operations review"]
+    COCKPIT --> NARRATED["Narrated Run Review"]
   end
 
   PARITY --> DASH
@@ -48,13 +50,13 @@ The important boundary: the solid local path proves model lifecycle behavior and
 
 ## Screenshot Walkthrough
 
-Fresh full-page captures from the generated app are available as a linear demo path:
+Fresh browser-verified captures from the generated app are available as a linear demo path:
 
 | Step | Screenshot | What it proves |
 | --- | --- | --- |
-| 0 | `docs/screenshots/study-00-artifact-index.png` | The generated artifact index gives reviewers one launch point. |
+| 0 | `docs/screenshots/study-00-artifact-index.png` | The generated artifact index gives operators one launch point. |
 | 1 | `docs/screenshots/study-01-main-dashboard.png` | The main MLOps lifecycle dashboard is readable end to end. |
-| 2 | `docs/screenshots/study-02-judge-cockpit.png` | The portfolio cockpit groups evidence by reviewer intent. |
+| 2 | `docs/screenshots/study-02-judge-cockpit.png` | The operations review groups evidence by operational concern. |
 | 3 | `docs/screenshots/study-03-operator-drill.png` | Failure recovery is rehearsed as an operator workflow. |
 | 4 | `docs/screenshots/study-04-reliability-signal-mesh.png` | Cross-system reliability signals are connected before release. |
 | 5 | `docs/screenshots/study-05-narrated-demo-studio.png` | The narration and video plan can be reviewed without running tools. |
@@ -62,7 +64,7 @@ Fresh full-page captures from the generated app are available as a linear demo p
 1. **Main dashboard**: `docs/screenshots/dashboard.png`
    Inspect the promotion state, model gates, rollback behavior, drift signal, and generated evidence links. This is the fastest way to see that the project has a working local lifecycle.
 
-2. **Judge demo cockpit**: `docs/screenshots/dashboard-judge-cockpit.jpg`
+2. **Operations review**: `docs/screenshots/study-02-judge-cockpit.png`
    Use this as the portfolio entry point. It groups the evidence by release, observability, governance, and operator handoff so a reviewer does not need to hunt through files.
 
 3. **Evidence deck**: `docs/screenshots/dashboard-evidence-deck.png`
@@ -74,13 +76,13 @@ Fresh full-page captures from the generated app are available as a linear demo p
 5. **Reliability Signal Mesh**: `docs/screenshots/dashboard-reliability-signal-mesh.png`
    Connects Airflow assets, OpenTelemetry resource attributes, Kueue pressure, SLO burn, and release admission into one operational graph.
 
-6. **Narrated Demo Studio**: `docs/screenshots/dashboard-narrated-demo-studio.png`
+6. **Narrated Run Review**: `docs/screenshots/dashboard-narrated-demo-studio.png`
    Provides a timed explanation plan, subtitle file, natural-voice backend options, and Remotion props for turning the evidence into a polished video walkthrough.
 
-7. **KServe canary readiness**: `docs/screenshots/dashboard-kserve-canary-readiness.png`
+7. **KServe canary readiness** in the main dashboard
    Explains field ownership, dry-run apply, and canary analysis gates before a model reaches production traffic.
 
-8. **Kueue admission path lab**: `docs/screenshots/dashboard-admission-path-lab.png`
+8. **Kueue admission path lab** in the main dashboard
    Shows preferred flavors, last-acceptable fallback boundaries, and flavor-scoped checks for batch and ML workloads.
 
 9. **Mobile/responsive capture**: `docs/screenshots/dashboard-mobile.png`
@@ -96,7 +98,7 @@ Start with `src/kube_mlops_platform/cli.py`. It wires the deterministic demo int
 | Real registry contract | `mlflow_runtime.py`, `mlflow_churn_model.py` | MLflow aliases, signatures, model-from-code, parity |
 | Release and reliability | `release_admission.py`, `reliability_signal_mesh.py`, `operational_readiness.py` | Fail-closed rollout decisions and evidence packets |
 | Kubernetes depth | `kserve_canary_readiness.py`, `cohort_fair_sharing.py`, `dynamic_resource_allocation.py`, `supply_chain.py` | How cluster controls map to model operations |
-| Presentation layer | `dashboard.py`, `demo_cockpit.py`, `narrated_demo_studio.py`, `artifact_index.py` | How generated evidence becomes a reviewer-friendly app |
+| Operator UI | `operator_console.py`, `dashboard.py`, `demo_cockpit.py`, `narrated_demo_studio.py`, `artifact_index.py` | Shared shell, offline reports, responsive behavior, and evidence navigation |
 
 ## Commands To Reproduce
 

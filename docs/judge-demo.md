@@ -1,4 +1,4 @@
-# Judge Demo
+# Operations Review Runbook
 
 ## Start the full evidence dashboard
 
@@ -15,8 +15,7 @@ python3 -m http.server 8091 --bind 127.0.0.1 --directory .local/reports
 
 Open `http://127.0.0.1:8091/mlops_platform_dashboard.html`.
 
-The dashboard includes a **Judge Demo Theater** panel. Use it as the live
-walkthrough rail: each cue maps the narrated video to the release lab,
+The dashboard includes a **Run Review** panel. Each cue maps the narrated recording to the release lab,
 observability signals, and generated JSON evidence.
 
 ## Five-minute story

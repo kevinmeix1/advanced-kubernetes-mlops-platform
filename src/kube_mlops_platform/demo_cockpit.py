@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from .io import read_json, write_json
+from .operator_console import decorate_console
 
 
 def esc(value: object) -> str:
@@ -159,7 +160,7 @@ def _write_html(path: Path, manifest: dict) -> Path:
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{esc(manifest["project"])} Judge Demo Cockpit</title>
+  <title>{esc(manifest["project"])} Operations Review</title>
   <style>
     * {{ box-sizing: border-box; }}
     body {{ margin: 0; background: #f6f8fb; color: #172026; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }}
@@ -202,8 +203,8 @@ def _write_html(path: Path, manifest: dict) -> Path:
 </head>
 <body>
   <header>
-    <h1>{esc(manifest["project"])} Judge Demo Cockpit</h1>
-    <p>An interactive review surface that connects the runnable dashboard, narrated demo, operational readiness packet, and generated evidence artifacts.</p>
+    <h1>{esc(manifest["project"])} Operations Review</h1>
+    <p>Release state, operational readiness, run evidence, and recovery artifacts in one review surface.</p>
   </header>
   <main>
     <section class="hero">
@@ -286,7 +287,7 @@ def _write_html(path: Path, manifest: dict) -> Path:
 </html>
 """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(body, encoding="utf-8")
+    path.write_text(decorate_console(body, active="review"), encoding="utf-8")
     return path
 
 
@@ -495,5 +496,5 @@ def _write_operator_drill_html(path: Path, report: dict) -> Path:
 </html>
 """
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(body, encoding="utf-8")
+    path.write_text(decorate_console(body, active="drill"), encoding="utf-8")
     return path

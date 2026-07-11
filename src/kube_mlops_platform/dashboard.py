@@ -4,6 +4,8 @@ import html
 import json
 from pathlib import Path
 
+from .operator_console import decorate_console
+
 
 def esc(value: object) -> str:
     return html.escape("" if value is None else str(value))
@@ -382,13 +384,13 @@ def render_dashboard(
           <div class="metric"><span>Observed feature drift</span><strong>{badge(monitoring_report.get('feature_drift', {}).get('passed', False))}</strong></div>
         </section>
 
-        <section class="panel evidence-deck" data-testid="judge-evidence-deck">
+        <section class="panel evidence-deck" data-testid="release-evidence">
           <div class="evidence-head">
             <div>
-              <h2>Judge Evidence Deck</h2>
-              <p>Review the control-plane proof in one pass: each card maps a local artifact to the production concern it would own in a Kubernetes deployment.</p>
+              <h2>Release Evidence</h2>
+              <p>Registry, orchestration, scheduling, and serving controls captured for the current release candidate.</p>
             </div>
-            <span class="badge neutral">portfolio review mode</span>
+            <span class="badge neutral">snapshot verified</span>
           </div>
           <div class="evidence-grid">
             <div class="evidence-card"><span>Registry safety</span><strong>MLflow alias rollback is exercised</strong><p>Champion version, registry inventory, idempotent promotion, and rollback parity are generated before the release lab can advance.</p></div>
@@ -398,13 +400,13 @@ def render_dashboard(
           </div>
         </section>
 
-        <section class="panel demo-theater" data-testid="demo-theater">
+        <section class="panel demo-theater" data-testid="run-review">
           <div class="evidence-head">
             <div>
-              <h2>Judge Demo Theater</h2>
-              <p>A guided portfolio walkthrough with natural neural narration, video assets, and the exact observability signals a reviewer should challenge.</p>
+              <h2>Run Review</h2>
+              <p>A timed review of release state, failure containment, and the evidence produced by each control-plane decision.</p>
             </div>
-            <span class="badge neutral">narrated demo</span>
+            <span class="badge neutral">guided runbook</span>
           </div>
           <div class="theater-grid">
             <div class="theater-stage" aria-live="polite">
@@ -418,16 +420,16 @@ def render_dashboard(
             </div>
             <div class="theater-panel">
               <div class="theater-kpis">
-                <div><span>Video</span><strong>H.264 judge walkthrough</strong></div>
+                <div><span>Recording</span><strong>H.264 release walkthrough</strong></div>
                 <div><span>Voice</span><strong>edge-tts neural narration</strong></div>
                 <div><span>Signals</span><strong>gates, SLO, drift, queue</strong></div>
                 <div><span>Evidence</span><strong>screenshots + JSON reports</strong></div>
               </div>
               <div class="theater-progress"><span id="theaterProgress"></span></div>
-              <p id="theaterNotes" class="theater-notes">Reviewer path: run <code>make demo</code>, open this dashboard, then play <code>docs/demo/kubernetes-mlops-judge-demo.mp4</code>.</p>
+              <p id="theaterNotes" class="theater-notes">The runbook begins with a deterministic <code>make demo</code> evidence snapshot.</p>
               <div class="theater-links">
-                <a href="../../docs/demo/kubernetes-mlops-judge-demo.mp4">Watch video</a>
-                <a href="../../docs/judge-demo.md">Demo script</a>
+                <a href="../../docs/demo/kubernetes-mlops-judge-demo.mp4">Open recording</a>
+                <a href="../../docs/judge-demo.md">Run review notes</a>
                 <a href="../../docs/demo-narration.txt">Narration text</a>
                 <a href="index.html">Artifact index</a>
               </div>
@@ -438,7 +440,7 @@ def render_dashboard(
         <script>
           function renderDemoTheater(index) {{
             const cues = [
-              {{cue: "Opening", title: "Explain the release control plane", body: "Start with the champion alias, gates, and deployment evidence before touching any controls.", notes: "The first judge question is usually whether this is reproducible. Point to make demo, MLflow contract checks, and the artifact index."}},
+              {{cue: "Opening", title: "Explain the release control plane", body: "Start with the champion alias, gates, and deployment evidence before touching any controls.", notes: "Reproducibility is anchored by make demo, MLflow contract checks, and the artifact index."}},
               {{cue: "Operate", title: "Tune the canary decision live", body: "Move latency, error rate, queue pressure, and drift controls to show fail-closed promotion logic.", notes: "Narrate that Airflow owns the decision and KServe owns serving state; neither silently bypasses the gate."}},
               {{cue: "Recover", title: "Prove rollback is more than a button", body: "Use the rollback path, registry aliases, and evidence bundle to show how a bad release is contained.", notes: "Call out idempotency, previous champion preservation, and bounded callback side effects."}},
               {{cue: "Scale", title: "Connect local proof to Kubernetes", body: "Finish with Kueue admission, resource envelopes, tenancy, and cloud migration notes.", notes: "This is where the project stops being a toy: scheduling, quotas, cost, and observability all have owners."}}
@@ -772,5 +774,5 @@ def render_dashboard(
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(body, encoding="utf-8")
+    output_path.write_text(decorate_console(body, active="dashboard"), encoding="utf-8")
     return output_path
