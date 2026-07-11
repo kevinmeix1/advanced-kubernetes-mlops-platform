@@ -1,0 +1,34 @@
+# syntax=docker/dockerfile:1.7
+
+FROM python:3.12.13-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    HOME=/tmp/runtime \
+    XDG_CACHE_HOME=/tmp/runtime/.cache
+
+WORKDIR /opt/mlflow
+
+RUN groupadd --gid 65532 runtime \
+    && useradd --uid 65532 --gid 65532 --no-create-home --shell /usr/sbin/nologin runtime \
+    && install -d -o 65532 -g 65532 /var/lib/mlflow
+
+COPY requirements-mlflow.lock ./
+
+RUN python -m pip install --upgrade "pip==25.3" \
+    && python -m pip install --constraint requirements-mlflow.lock \
+        "mlflow==3.14.0" "pandas==2.3.3" "prometheus-flask-exporter==0.23.2" \
+    && python -m pip check \
+    && python -c "from prometheus_flask_exporter.multiprocess import GunicornInternalPrometheusMetrics"
+
+USER 65532:65532
+
+EXPOSE 5000
+STOPSIGNAL SIGTERM
+
+HEALTHCHECK --interval=10s --timeout=2s --start-period=20s --retries=6 \
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=1).read()"]
+
+ENTRYPOINT ["mlflow"]

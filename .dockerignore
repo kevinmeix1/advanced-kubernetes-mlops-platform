@@ -1,0 +1,16 @@
+.git
+.github
+.local
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+docs/screenshots
+tests
+airflow
+kubernetes
+kserve
+metaflow_flows
+infra

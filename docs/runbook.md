@@ -41,7 +41,11 @@ make deploy
 make health
 ```
 
-The local registry keeps a `previous_champion` pointer when a second champion is promoted. In production, this maps to MLflow stages or aliases plus a KServe manifest update.
+The local registry keeps a `previous_champion` pointer when a second champion is
+promoted. The executable MLflow contract maps that behavior to `champion` and
+`previous_champion` aliases on immutable registry versions. Follow
+[`mlflow-registry-recovery.md`](mlflow-registry-recovery.md) before reconciling
+the KServe revision or changing live traffic.
 
 ## KServe Deployment Failure
 
@@ -60,4 +64,3 @@ kubectl get inferenceservice -n mlops
 kubectl describe inferenceservice churn-risk-predictor -n mlops
 kubectl get pods -n mlops
 ```
-

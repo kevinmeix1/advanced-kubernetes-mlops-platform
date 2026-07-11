@@ -1,7 +1,26 @@
-.PHONY: demo train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan multi-team-readiness event-driven-assets pod-resource-envelopes cohort-fair-sharing flavor-fungibility pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission ci-verify minikube-up kubernetes-plan test clean
+.PHONY: demo demo-voice demo-video train evaluate deploy predict monitor rollback health plan-release policy-audit trace-report chaos-drill optimize-resources network-security gitops-plan dr-plan governance-bundle slo-report cloud-plan supply-chain orchestration-scorecard accelerator-plan device-plan resource-health-status advanced-device-sharing admin-access-diagnostics inplace-resize-plan topology-plan kuberay-plan inference-gateway-plan kserve-canary-readiness semantic-telemetry-plan deadline-alerts-plan cost-observability elastic-workload-plan indexed-job-resilience provisioning-admission multikueue-dispatch model-cache dag-bundle-plan asset-partitioning-plan airflow-stateful-orchestration airflow-sdk-contract multi-team-readiness event-driven-assets pod-resource-envelopes scheduling-gate-controller cohort-fair-sharing flavor-fungibility concurrent-admission pending-workload-visibility tenancy-report identity-report performance-budget queue-simulation workload-aware-scheduling runtime-security control-plane-diagnostics memory-qos hpa-scale-zero suspended-job-resources constrained-impersonation release-admission mlflow-contract mlflow-metrics-contract test-mlflow lint-mlflow compose-config compose-up compose-observability-up compose-smoke compose-down ci-verify minikube-up kubernetes-plan test clean
+
+PYTHON ?= python3
+MLFLOW_PORT ?= 5001
+PROMETHEUS_PORT ?= 9090
+MLFLOW_FILES := \
+	src/kube_mlops_platform/cli.py \
+	src/kube_mlops_platform/dashboard.py \
+	src/kube_mlops_platform/mlflow_churn_model.py \
+	src/kube_mlops_platform/mlflow_runtime.py \
+	tests/test_mlflow_metrics_contract.py \
+	tests/test_mlflow_registry.py \
+	tools/smoke_mlflow_metrics.py \
+	tools/smoke_mlflow_registry.py
 
 demo:
 	PYTHONPATH=src python3 -m kube_mlops_platform demo --output .local
+
+demo-voice:
+	$(PYTHON) tools/generate_demo_voice.py
+
+demo-video:
+	bash tools/build_demo_video.sh
 
 train:
 	PYTHONPATH=src python3 -m kube_mlops_platform train --output .local
@@ -90,6 +109,9 @@ kuberay-plan:
 inference-gateway-plan:
 	PYTHONPATH=src python3 -m kube_mlops_platform inference-gateway-plan --output .local
 
+kserve-canary-readiness:
+	PYTHONPATH=src python3 -m kube_mlops_platform kserve-canary-readiness --output .local
+
 semantic-telemetry-plan:
 	PYTHONPATH=src python3 -m kube_mlops_platform semantic-telemetry-plan --output .local
 
@@ -120,6 +142,12 @@ dag-bundle-plan:
 asset-partitioning-plan:
 	PYTHONPATH=src python3 -m kube_mlops_platform asset-partitioning-plan --output .local
 
+airflow-stateful-orchestration:
+	PYTHONPATH=src python3 -m kube_mlops_platform airflow-stateful-orchestration --output .local
+
+airflow-sdk-contract:
+	python3 tools/validate_airflow33_dag.py airflow/dags/airflow33_stateful_release_dag.py
+
 multi-team-readiness:
 	PYTHONPATH=src python3 -m kube_mlops_platform multi-team-readiness --output .local
 
@@ -129,11 +157,17 @@ event-driven-assets:
 pod-resource-envelopes:
 	PYTHONPATH=src python3 -m kube_mlops_platform pod-resource-envelopes --output .local
 
+scheduling-gate-controller:
+	PYTHONPATH=src python3 -m kube_mlops_platform scheduling-gate-controller --output .local
+
 cohort-fair-sharing:
 	PYTHONPATH=src python3 -m kube_mlops_platform cohort-fair-sharing --output .local
 
 flavor-fungibility:
 	PYTHONPATH=src python3 -m kube_mlops_platform flavor-fungibility --output .local
+
+concurrent-admission:
+	PYTHONPATH=src python3 -m kube_mlops_platform concurrent-admission --output .local
 
 pending-workload-visibility:
 	PYTHONPATH=src python3 -m kube_mlops_platform pending-workload-visibility --output .local
@@ -174,8 +208,47 @@ constrained-impersonation:
 release-admission:
 	PYTHONPATH=src python3 -m kube_mlops_platform release-admission --output .local
 
+mlflow-contract:
+	PYTHONPATH=src $(PYTHON) tools/smoke_mlflow_registry.py --output .local
+
+mlflow-metrics-contract:
+	$(PYTHON) tools/smoke_mlflow_metrics.py --base-url http://127.0.0.1:$(MLFLOW_PORT) --output .local/reports/mlflow_server_metrics_contract.json
+
+test-mlflow:
+	PYTHONPATH=src $(PYTHON) -m unittest tests.test_mlflow_registry tests.test_mlflow_metrics_contract -v
+
+lint-mlflow:
+	$(PYTHON) -m ruff check --ignore E501,I001 $(MLFLOW_FILES)
+
+compose-config:
+	docker compose config --quiet
+
+compose-up:
+	MLFLOW_PORT=$(MLFLOW_PORT) docker compose up --build --detach mlflow
+
+compose-observability-up:
+	MLFLOW_PORT=$(MLFLOW_PORT) PROMETHEUS_PORT=$(PROMETHEUS_PORT) docker compose --profile observability up --build --detach
+
+compose-smoke:
+	@set -eu; \
+	trap 'docker compose --profile observability down --volumes --remove-orphans >/dev/null 2>&1 || true' EXIT; \
+	docker compose --profile observability down --volumes --remove-orphans >/dev/null 2>&1 || true; \
+	MLFLOW_PORT=$(MLFLOW_PORT) docker compose up --build --detach mlflow; \
+	for attempt in $$(seq 1 60); do \
+		if $(PYTHON) -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:$(MLFLOW_PORT)/health', timeout=1).read()" 2>/dev/null; then break; fi; \
+		if [ "$$attempt" -eq 60 ]; then docker compose logs mlflow mlflow-db-upgrade; exit 1; fi; \
+		sleep 2; \
+	done; \
+	PYTHONPATH=src $(PYTHON) tools/smoke_mlflow_registry.py --tracking-uri http://127.0.0.1:$(MLFLOW_PORT) --output .local; \
+	$(PYTHON) tools/smoke_mlflow_metrics.py --base-url http://127.0.0.1:$(MLFLOW_PORT) --output .local/reports/mlflow_server_metrics_contract.json
+
+compose-down:
+	docker compose --profile observability down --volumes --remove-orphans
+
 ci-verify:
 	PYTHONPATH=src python3 -m compileall -q src tests
+	test -f docs/demo/kubernetes-mlops-judge-demo.mp4
+	test $$(wc -c < docs/demo/kubernetes-mlops-judge-demo.mp4) -gt 1000000
 	test -f .local/reports/mlops_platform_dashboard.html
 	test -f .local/reports/index.html
 	test -f .local/reports/governance_evidence_bundle.json
@@ -192,6 +265,7 @@ ci-verify:
 	test -f .local/reports/topology_placement_plan.json
 	test -f .local/reports/kuberay_capacity_plan.json
 	test -f .local/reports/inference_gateway_plan.json
+	test -f .local/reports/kserve_canary_readiness_plan.json
 	test -f .local/reports/semantic_telemetry_plan.json
 	test -f .local/reports/deadline_alert_plan.json
 	test -f .local/reports/cost_observability_report.json
@@ -202,11 +276,14 @@ ci-verify:
 	test -f .local/reports/model_cache_plan.json
 	test -f .local/reports/dag_bundle_versioning_plan.json
 	test -f .local/reports/asset_partitioning_plan.json
+	test -f .local/reports/airflow_stateful_orchestration_plan.json
 	test -f .local/reports/multi_team_readiness_plan.json
 	test -f .local/reports/event_driven_assets_plan.json
 	test -f .local/reports/pod_resource_envelope_plan.json
+	test -f .local/reports/scheduling_gate_controller_plan.json
 	test -f .local/reports/cohort_fair_sharing_plan.json
 	test -f .local/reports/flavor_fungibility_plan.json
+	test -f .local/reports/concurrent_admission_plan.json
 	test -f .local/reports/pending_workload_visibility_plan.json
 	test -f .local/reports/tenancy_fairness_report.json
 	test -f .local/reports/identity_access_report.json
@@ -219,7 +296,19 @@ ci-verify:
 	test -f .local/reports/hpa_scale_to_zero_plan.json
 	test -f .local/reports/suspended_job_resources_plan.json
 	test -f .local/reports/constrained_impersonation_plan.json
+	test -f .local/reports/ai_workload_telemetry_plan.json
 	test -f .local/reports/release_admission_decision.json
+	test -f .local/reports/operational_readiness_review.json
+	test -f .local/reports/judge_demo_cockpit.html
+	test -f .local/reports/judge_demo_cockpit_manifest.json
+	test -f .local/reports/operator_drill_lab.html
+	test -f .local/reports/operator_drill_report.json
+	test -f .local/reports/reliability_signal_mesh.html
+	test -f .local/reports/reliability_signal_mesh.json
+	test -f .local/reports/narrated_demo_studio.html
+	test -f .local/reports/narrated_demo_studio.json
+	test -f .local/reports/remotion_demo_props.json
+	test -f .local/reports/narrated_demo_subtitle_plan.srt
 	test -f .local/supply-chain/subject.checksums.txt
 	python3 -m json.tool .local/reports/governance_evidence_bundle.json >/dev/null
 	python3 -m json.tool .local/reports/slo_error_budget.json >/dev/null
@@ -235,6 +324,7 @@ ci-verify:
 	python3 -m json.tool .local/reports/topology_placement_plan.json >/dev/null
 	python3 -m json.tool .local/reports/kuberay_capacity_plan.json >/dev/null
 	python3 -m json.tool .local/reports/inference_gateway_plan.json >/dev/null
+	python3 -m json.tool .local/reports/kserve_canary_readiness_plan.json >/dev/null
 	python3 -m json.tool .local/reports/semantic_telemetry_plan.json >/dev/null
 	python3 -m json.tool .local/reports/deadline_alert_plan.json >/dev/null
 	python3 -m json.tool .local/reports/cost_observability_report.json >/dev/null
@@ -245,11 +335,14 @@ ci-verify:
 	python3 -m json.tool .local/reports/model_cache_plan.json >/dev/null
 	python3 -m json.tool .local/reports/dag_bundle_versioning_plan.json >/dev/null
 	python3 -m json.tool .local/reports/asset_partitioning_plan.json >/dev/null
+	python3 -m json.tool .local/reports/airflow_stateful_orchestration_plan.json >/dev/null
 	python3 -m json.tool .local/reports/multi_team_readiness_plan.json >/dev/null
 	python3 -m json.tool .local/reports/event_driven_assets_plan.json >/dev/null
 	python3 -m json.tool .local/reports/pod_resource_envelope_plan.json >/dev/null
+	python3 -m json.tool .local/reports/scheduling_gate_controller_plan.json >/dev/null
 	python3 -m json.tool .local/reports/cohort_fair_sharing_plan.json >/dev/null
 	python3 -m json.tool .local/reports/flavor_fungibility_plan.json >/dev/null
+	python3 -m json.tool .local/reports/concurrent_admission_plan.json >/dev/null
 	python3 -m json.tool .local/reports/pending_workload_visibility_plan.json >/dev/null
 	python3 -m json.tool .local/reports/tenancy_fairness_report.json >/dev/null
 	python3 -m json.tool .local/reports/identity_access_report.json >/dev/null
@@ -262,7 +355,14 @@ ci-verify:
 	python3 -m json.tool .local/reports/hpa_scale_to_zero_plan.json >/dev/null
 	python3 -m json.tool .local/reports/suspended_job_resources_plan.json >/dev/null
 	python3 -m json.tool .local/reports/constrained_impersonation_plan.json >/dev/null
+	python3 -m json.tool .local/reports/ai_workload_telemetry_plan.json >/dev/null
 	python3 -m json.tool .local/reports/release_admission_decision.json >/dev/null
+	python3 -m json.tool .local/reports/operational_readiness_review.json >/dev/null
+	python3 -m json.tool .local/reports/judge_demo_cockpit_manifest.json >/dev/null
+	python3 -m json.tool .local/reports/operator_drill_report.json >/dev/null
+	python3 -m json.tool .local/reports/reliability_signal_mesh.json >/dev/null
+	python3 -m json.tool .local/reports/narrated_demo_studio.json >/dev/null
+	python3 -m json.tool .local/reports/remotion_demo_props.json >/dev/null
 
 minikube-up:
 	@echo "Start Minikube and install KServe, then apply manifests:"
@@ -270,6 +370,7 @@ minikube-up:
 	@echo "  kubectl create namespace mlops --dry-run=client -o yaml | kubectl apply -f -"
 	@echo "  kubectl apply -f kserve/production-hardening.yaml"
 	@echo "  kubectl apply -f kserve/inferenceservice.yaml"
+	@echo "  kubectl apply -f kserve/canary-analysis.yaml"
 	@echo "  kubectl apply -f kserve/local-model-cache.yaml"
 	@echo "  kubectl apply -f kubernetes/training-and-monitoring-workloads.yaml"
 	@echo "  kubectl apply -f kubernetes/resource-optimization.yaml"
@@ -293,8 +394,10 @@ minikube-up:
 	@echo "  kubectl apply -f kubernetes/provisioning-admission-checks.yaml"
 	@echo "  kubectl apply -f kubernetes/multikueue-dispatch.yaml"
 	@echo "  kubectl apply -f kubernetes/pod-resource-envelopes.yaml"
+	@echo "  kubectl apply -f kubernetes/scheduling-gate-controller.yaml"
 	@echo "  kubectl apply -f kubernetes/kueue-cohort-fair-sharing.yaml"
 	@echo "  kubectl apply -f kubernetes/kueue-flavor-fungibility.yaml"
+	@echo "  kubectl apply -f kubernetes/kueue-concurrent-admission.yaml"
 	@echo "  kubectl apply -f kubernetes/kueue-pending-workload-visibility.yaml"
 	@echo "  kubectl apply -f kubernetes/inference-gateway-routing.yaml"
 	@echo "  kubectl apply -f kubernetes/multitenancy-fairness.yaml"

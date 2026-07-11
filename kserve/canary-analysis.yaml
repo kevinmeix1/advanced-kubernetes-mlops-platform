@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: churn-risk-canary-analysis
+  namespace: mlops
+spec:
+  args:
+    - name: service-name
+      value: churn-risk-predictor
+    - name: namespace
+      value: mlops
+  metrics:
+    - name: canary-error-rate
+      interval: 60s
+      count: 3
+      failureLimit: 1
+      successCondition: result[0] <= 0.02
+      provider:
+        prometheus:
+          address: http://prometheus-operated.monitoring.svc:9090
+          query: |
+            sum(rate(kserve_request_total{namespace="{{args.namespace}}",inferenceservice="{{args.service-name}}",code!~"2.."}[2m]))
+            /
+            clamp_min(sum(rate(kserve_request_total{namespace="{{args.namespace}}",inferenceservice="{{args.service-name}}"}[2m])), 1)
+    - name: canary-latency-p95
+      interval: 60s
+      count: 3
+      failureLimit: 1
+      successCondition: result[0] <= 50
+      provider:
+        prometheus:
+          address: http://prometheus-operated.monitoring.svc:9090
+          query: |
+            histogram_quantile(0.95, sum(rate(kserve_request_duration_seconds_bucket{namespace="{{args.namespace}}",inferenceservice="{{args.service-name}}"}[2m])) by (le)) * 1000
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: churn-risk-canary-server-side-dry-run
+  namespace: mlops
+  labels:
+    app.kubernetes.io/name: kubernetes-mlops-platform
+    app.kubernetes.io/component: release-validation
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      serviceAccountName: airflow-release-runner
+      restartPolicy: Never
+      containers:
+        - name: kubectl
+          image: bitnami/kubectl:1.36
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              kubectl apply --server-side --dry-run=server --field-manager=mlops-release-controller -f /manifests/canary-inferenceservice.yaml
+              kubectl diff --server-side --field-manager=mlops-release-controller -f /manifests/canary-inferenceservice.yaml || true

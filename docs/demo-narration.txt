@@ -1,0 +1,17 @@
+Welcome to the Kubernetes Native MLOps Platform.
+
+This project treats model delivery as a controlled release, not a training script followed by a deployment command. It also draws a firm line between executable evidence and architecture labs, so a reviewer can tell what actually ran from what is designed for a shared cluster.
+
+The control room starts with the current application champion, offline gate status, KServe-shaped deployment state, the real MLflow 3 contract, serving latency, and observed feature drift. The MLflow evidence is backed by a SQL registry. It packages the model from code, records an explicit signature and dataset digest, rejects conflicting application-version reuse, moves champion and previous-champion aliases, loads the model by alias, and proves prediction parity through rollback and restoration.
+
+The Canary Release Lab exposes the same policy thresholds emitted by the Python control plane. In the observed state, quality gates pass, latency and Kueue pressure are healthy, and the error budget is untouched. Feature drift still fails, so Airflow must hold the release instead of treating green offline metrics as permission to promote.
+
+The Kubernetes sections are deliberately more than static YAML. The KServe canary readiness view checks server-side apply ownership, rollout status, traffic split evidence, Prometheus analysis, and promotion rollback controls. The concurrent admission view shows how batch training, serving diagnostics, and incident workloads compete for quota without starving the release path. The Kueue Admission Path Lab makes that concrete: a reviewer can switch scenarios and see ClusterQueue flavor selection, fallback, borrowing, preemption, and pending workload visibility in one place.
+
+When the drift scenario becomes healthy, all five controls pass. The decision changes to Advance Canary, and the path from Airflow validation through Kueue quota, KServe health, Prometheus budget, and the final Airflow action turns green. This is a recommendation under an approval operation, not an uncontrolled registry mutation.
+
+Next, a six percent serving error rate produces a twelve-times error-budget burn. That crosses both the rollback burn threshold and the absolute error-rate threshold. Promotion freezes, the Prometheus stage fails, and the controller recommends restoring the previous champion alias.
+
+Below the lab, the dashboard retains evaluation gates, deployment identity, recent predictions, registry aliases, idempotency, rollback parity, data validation, feature-level drift, throughput, and alert evidence. The repository also validates Airflow 3.3 DAGs and contains KServe, Kueue, GitOps, workload identity, network policy, supply-chain, cost, SLO, disaster recovery, and Kubernetes resource-management designs.
+
+The production boundary remains explicit. A real deployment still needs a managed relational registry, object storage, authenticated MLflow, reconciled KServe status, measured cluster behavior, and transactional promotion ownership. The value of this demo is that every release decision can be explained from model evidence to operational rollback.

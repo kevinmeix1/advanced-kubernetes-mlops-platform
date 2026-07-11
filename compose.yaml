@@ -1,0 +1,116 @@
+name: kubernetes-mlops-platform
+
+services:
+  mlflow-db-upgrade:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    image: kubernetes-mlops-mlflow:3.14.0-local
+    command:
+      - db
+      - upgrade
+      - sqlite:////var/lib/mlflow/mlflow.db
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 768m
+    cpus: 1.0
+    volumes:
+      - mlflow-state:/var/lib/mlflow
+    networks: [mlflow-control]
+    restart: "no"
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    image: kubernetes-mlops-mlflow:3.14.0-local
+    depends_on:
+      mlflow-db-upgrade:
+        condition: service_completed_successfully
+    command:
+      - server
+      - --backend-store-uri
+      - sqlite:////var/lib/mlflow/mlflow.db
+      - --artifacts-destination
+      - file:///var/lib/mlflow/artifacts
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --workers
+      - "1"
+      - --allowed-hosts
+      - mlflow:5000,localhost:*,127.0.0.1:*
+      - --cors-allowed-origins
+      - http://localhost:5001,http://127.0.0.1:5001
+      - --expose-prometheus
+      - /var/lib/mlflow/prometheus
+    ports:
+      - "${MLFLOW_PORT:-5001}:5000"
+    read_only: true
+    init: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 1536m
+    cpus: 2.0
+    volumes:
+      - mlflow-state:/var/lib/mlflow
+    networks: [mlflow-control]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=1).read()",
+        ]
+      interval: 5s
+      timeout: 2s
+      retries: 18
+      start_period: 15s
+    stop_grace_period: 20s
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.4
+    profiles: ["observability"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=24h
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: ["ALL"]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 0.5
+    volumes:
+      - ./monitoring/prometheus/mlflow-compose.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks: [mlflow-control]
+    restart: unless-stopped
+
+networks:
+  mlflow-control:
+    name: kubernetes-mlops-mlflow-control
+
+volumes:
+  mlflow-state:
+  prometheus-data:

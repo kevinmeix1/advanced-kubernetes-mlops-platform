@@ -7,6 +7,8 @@ from pathlib import Path
 from kube_mlops_platform.accelerator_plan import build_accelerator_capacity_plan
 from kube_mlops_platform.admin_access_diagnostics import build_admin_access_diagnostic_plan
 from kube_mlops_platform.advanced_device_sharing import build_advanced_device_sharing_plan
+from kube_mlops_platform.ai_workload_telemetry import build_ai_workload_telemetry_plan
+from kube_mlops_platform.airflow_stateful_orchestration import build_airflow_stateful_orchestration_plan
 from kube_mlops_platform.asset_partitioning import build_asset_partitioning_plan
 from kube_mlops_platform.chaos import run_chaos_drill
 from kube_mlops_platform.cloud_migration import build_cloud_migration_plan
@@ -14,10 +16,13 @@ from kube_mlops_platform.cli import demo, train
 from kube_mlops_platform.cohort_fair_sharing import build_cohort_fair_sharing_plan
 from kube_mlops_platform.control_plane import build_release_plan, evaluate_release_policy
 from kube_mlops_platform.control_plane_diagnostics import build_control_plane_diagnostics_plan
+from kube_mlops_platform.concurrent_admission import build_concurrent_admission_plan
 from kube_mlops_platform.constrained_impersonation import build_constrained_impersonation_plan
 from kube_mlops_platform.cost_observability import build_cost_observability_report
 from kube_mlops_platform.data import generate_churn_dataset, split_rows
 from kube_mlops_platform.dag_bundle_versioning import build_dag_bundle_versioning_plan
+from kube_mlops_platform.demo_cockpit import build_judge_demo_cockpit, build_operator_drill_lab
+from kube_mlops_platform.narrated_demo_studio import build_narrated_demo_studio
 from kube_mlops_platform.deadline_alerts import build_deadline_alert_plan
 from kube_mlops_platform.disaster_recovery import build_disaster_recovery_plan
 from kube_mlops_platform.device_allocation import build_device_allocation_plan
@@ -33,6 +38,7 @@ from kube_mlops_platform.indexed_job_resilience import build_indexed_job_resilie
 from kube_mlops_platform.inplace_resize import build_inplace_resize_plan
 from kube_mlops_platform.inference_gateway import build_inference_gateway_plan
 from kube_mlops_platform.io import read_csv, read_json, read_jsonl, write_json
+from kube_mlops_platform.kserve_canary_readiness import build_kserve_canary_readiness_plan
 from kube_mlops_platform.kuberay_capacity import build_kuberay_capacity_plan
 from kube_mlops_platform.memory_qos import build_memory_qos_plan
 from kube_mlops_platform.model_cache import build_model_cache_plan
@@ -41,6 +47,7 @@ from kube_mlops_platform.multi_team_readiness import build_multi_team_readiness_
 from kube_mlops_platform.multikueue_dispatch import build_multikueue_dispatch_plan
 from kube_mlops_platform.network_security import build_network_security_report
 from kube_mlops_platform.orchestration_scorecard import build_orchestration_scorecard
+from kube_mlops_platform.operational_readiness import build_operational_readiness_review
 from kube_mlops_platform.policy_audit import audit_platform_policy
 from kube_mlops_platform.performance_budget import build_performance_budget_report
 from kube_mlops_platform.pending_workload_visibility import build_pending_workload_visibility_plan
@@ -48,10 +55,12 @@ from kube_mlops_platform.pod_resource_envelopes import build_pod_resource_envelo
 from kube_mlops_platform.provisioning_admission import build_provisioning_admission_plan
 from kube_mlops_platform.queue_simulator import build_queue_simulation
 from kube_mlops_platform.release_admission import build_release_admission_decision, evaluate_release_admission
+from kube_mlops_platform.reliability_signal_mesh import build_reliability_signal_mesh
 from kube_mlops_platform.registry import rollback
 from kube_mlops_platform.resource_health_status import build_resource_health_status_plan
 from kube_mlops_platform.resource_optimizer import build_resource_optimization_report
 from kube_mlops_platform.runtime_security import build_runtime_security_plan
+from kube_mlops_platform.scheduling_gate_controller import build_scheduling_gate_controller_plan
 from kube_mlops_platform.semantic_telemetry import build_semantic_telemetry_plan
 from kube_mlops_platform.serving import health
 from kube_mlops_platform.slo import build_slo_report
@@ -207,6 +216,20 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["kind: ConfigMap", "otlp", "k8sattributes", "memory_limiter", "attributes/semantic_redaction", "prediction.request.features", "customer.id", "prometheus", "batch"]:
             self.assertIn(expected, collector)
 
+    def test_ai_workload_telemetry_plan_maps_resources_assets_and_remediation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plan = build_ai_workload_telemetry_plan(root)
+            resource_fields = set(plan["required_resource_fields"])
+            otel_fields = set(plan["required_otel_fields"])
+
+            self.assertTrue(plan["passed"])
+            self.assertIn("pod.resources.requests.cpu", resource_fields)
+            self.assertTrue(any(field.startswith("dra.") for field in resource_fields))
+            self.assertIn("airflow.asset.uri", otel_fields)
+            self.assertTrue(any("Gateway traffic" in workload["remediation"] for workload in plan["workloads"]))
+            self.assertTrue((root / "reports" / "ai_workload_telemetry_plan.json").exists())
+
     def test_chaos_drill_and_chaos_mesh_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         chaos_manifest = (repo / "kubernetes" / "chaos-experiments.yaml").read_text(encoding="utf-8")
@@ -335,10 +358,100 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         workflow = (repo / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
         makefile = (repo / "Makefile").read_text(encoding="utf-8")
 
-        for expected in ["actions/upload-artifact@v6", "actions/attest@v4", "attestations: write", "GITHUB_STEP_SUMMARY", "make ci-verify", "concurrency"]:
+        for expected in [
+            "actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+            "actions/attest@f6bf1532d7d6793fce74eac584813a8eee607999",
+            "attestations: write",
+            "GITHUB_STEP_SUMMARY",
+            "make ci-verify",
+            "concurrency",
+        ]:
             self.assertIn(expected, workflow)
-        for expected in ["ci-verify:", "index.html", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
+        for expected in ["ci-verify:", "index.html", "operational_readiness_review.json", "judge_demo_cockpit.html", "judge_demo_cockpit_manifest.json", "operator_drill_lab.html", "operator_drill_report.json", "reliability_signal_mesh.html", "reliability_signal_mesh.json", "narrated_demo_studio.html", "narrated_demo_studio.json", "remotion_demo_props.json", "narrated_demo_subtitle_plan.srt", "pending_workload_visibility_plan.json", "tenancy_fairness_report.json", "identity_access_report.json", "concurrent_admission_plan.json", "flavor_fungibility_plan.json", "cohort_fair_sharing_plan.json", "scheduling_gate_controller_plan.json", "pod_resource_envelope_plan.json", "event_driven_assets_plan.json", "multi_team_readiness_plan.json", "asset_partitioning_plan.json", "dag_bundle_versioning_plan.json", "model_cache_plan.json", "multikueue_dispatch_plan.json", "provisioning_admission_plan.json", "indexed_job_resilience_plan.json", "elastic_workload_plan.json", "cost_observability_report.json", "deadline_alert_plan.json", "semantic_telemetry_plan.json", "kserve_canary_readiness_plan.json", "inference_gateway_plan.json", "kuberay_capacity_plan.json", "topology_placement_plan.json", "inplace_resize_plan.json", "admin_access_diagnostics_plan.json", "advanced_device_sharing_plan.json", "resource_health_status_plan.json", "device_allocation_plan.json", "release_admission_decision.json", "runtime_security_plan.json", "control_plane_diagnostics_plan.json", "memory_qos_plan.json", "hpa_scale_to_zero_plan.json", "suspended_job_resources_plan.json", "constrained_impersonation_plan.json", "workload_aware_scheduling_plan.json", "queue_simulation.json", "performance_budget.json", "accelerator_capacity_plan.json", "orchestration_scorecard.json", "supply_chain_evidence.json", "governance_evidence_bundle.json", "cloud_migration_plan.json"]:
             self.assertIn(expected, makefile)
+
+    def test_operational_readiness_review_aggregates_release_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            review = build_operational_readiness_review(root)
+
+            self.assertEqual(result["operational_readiness"]["target"], "kserve://mlops/churn-risk-predictor")
+            self.assertGreaterEqual(review["readiness_score"], 80.0)
+            self.assertIn("reports/release_admission_decision.json", review["operator_review_packet"])
+            self.assertTrue(any(check["name"] == "release_admission_fail_closed" for check in review["checks"]))
+            self.assertTrue((root / "reports" / "operational_readiness_review.json").exists())
+
+    def test_judge_demo_cockpit_links_review_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            cockpit = build_judge_demo_cockpit(
+                root,
+                project_name="Kubernetes MLOps Platform",
+                primary_dashboard="mlops_platform_dashboard.html",
+                demo_video="../../docs/demo/kubernetes-mlops-judge-demo.mp4",
+            )
+            html = (root / "reports" / "judge_demo_cockpit.html").read_text(encoding="utf-8")
+            self.assertEqual(result["judge_demo_cockpit"]["scenario_count"], 4)
+            self.assertGreaterEqual(cockpit["evidence_count"], 8)
+            self.assertIn("Operations Review", html)
+            self.assertIn("Evidence Filters", html)
+
+    def test_operator_drill_lab_rehearses_failure_recovery(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            drill = build_operator_drill_lab(
+                root,
+                project_name="Kubernetes MLOps Platform",
+                scenario="release drill",
+                primary_dashboard="mlops_platform_dashboard.html",
+                runbook="../../docs/runbook.md",
+            )
+            html = (root / "reports" / "operator_drill_lab.html").read_text(encoding="utf-8")
+            self.assertEqual(result["operator_drill"]["status"], "ready")
+            self.assertEqual([step["phase"] for step in drill["timeline"]], ["detect", "triage", "contain", "recover", "learn"])
+            self.assertIn("Postmortem Contract", html)
+            self.assertTrue((root / "reports" / "operator_drill_report.json").exists())
+
+    def test_narrated_demo_studio_generates_video_plan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            studio = build_narrated_demo_studio(
+                root,
+                project_name="Kubernetes MLOps Platform",
+                domain="Model release and Kubernetes operations",
+                primary_dashboard="mlops_platform_dashboard.html",
+                demo_video="../../docs/demo/kubernetes-mlops-judge-demo.mp4",
+            )
+            html = (root / "reports" / "narrated_demo_studio.html").read_text(encoding="utf-8")
+            props = read_json(root / "reports" / "remotion_demo_props.json")
+            self.assertEqual(result["narrated_demo_studio"]["status"], "ready")
+            self.assertEqual(studio["total_duration_seconds"], 174)
+            self.assertIn("kokoro_local", {item["name"] for item in studio["natural_voice_backends"]})
+            self.assertIn("Remotion props", html)
+            self.assertEqual(props["durationInFrames"], 5220)
+            self.assertTrue((root / "reports" / "narrated_demo_subtitle_plan.srt").exists())
+
+    def test_reliability_signal_mesh_connects_operating_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            mesh = build_reliability_signal_mesh(
+                root,
+                project_name="Kubernetes MLOps Platform",
+                domain="release mesh",
+                primary_dashboard="mlops_platform_dashboard.html",
+            )
+            html = (root / "reports" / "reliability_signal_mesh.html").read_text(encoding="utf-8")
+            self.assertEqual(result["reliability_signal_mesh"]["status"], "ready")
+            self.assertEqual(mesh["readiness_score"], 100.0)
+            self.assertIn("slo.burn_rate", mesh["semantic_contract"])
+            self.assertEqual(len(mesh["edges"]), 5)
+            self.assertIn("Reliability Signal Mesh", html)
+            self.assertTrue((root / "reports" / "reliability_signal_mesh.json").exists())
 
     def test_accelerator_capacity_plan_and_kubernetes_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
@@ -616,6 +729,24 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["CronPartitionTimetable", "PartitionedAssetTimetable", "StartOfHourMapper", "dag_run.partition_key"]:
             self.assertIn(expected, dag)
 
+    def test_airflow33_stateful_orchestration_contract(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        dag = (repo / "airflow" / "dags" / "airflow33_stateful_release_dag.py").read_text(encoding="utf-8")
+        docs = (repo / "docs" / "airflow-stateful-orchestration.md").read_text(encoding="utf-8")
+        ci = (repo / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        validator = (repo / "tools" / "validate_airflow33_dag.py").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            report = build_airflow_stateful_orchestration_plan(tmp, repo_root=repo)
+
+        self.assertTrue(report["passed"])
+        self.assertEqual(report["recommended_action"], "adopt_airflow_33_stateful_release_contract")
+        self.assertIn("real_airflow_parse_gate", {check["name"] for check in report["checks"] if check["passed"]})
+        for expected in ["task_state_store", "asset_state_store", "NEVER_EXPIRE", "ExceptionRetryPolicy", "RollupMapper", "FanOutMapper", "PartitionedAtRuntime"]:
+            self.assertIn(expected, dag)
+        self.assertIn("dag.validate()", validator)
+        self.assertIn("apache-airflow==3.3.0", ci)
+        self.assertIn("Production Boundary", docs)
+
     def test_multi_team_readiness_plan_and_airflow_config_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         docs = (repo / "docs" / "airflow-multi-team-readiness.md").read_text(encoding="utf-8")
@@ -811,6 +942,25 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["Pod Scheduling Readiness", "Dynamic Resource Allocation", "PodLevelResourceManagers"]:
             self.assertIn(expected, docs)
 
+    def test_scheduling_gate_controller_plan_and_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        manifest = (repo / "kubernetes" / "scheduling-gate-controller.yaml").read_text(encoding="utf-8")
+        docs = (repo / "docs" / "scheduling-gate-controller.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            report = build_scheduling_gate_controller_plan(root)
+
+            self.assertTrue(report["passed"])
+            self.assertEqual(report["recommended_action"], "run_scheduling_gate_controller")
+            self.assertEqual(report["summary"]["pods_released"], 2)
+            self.assertEqual(report["summary"]["stale_incidents"], 1)
+            self.assertTrue(any(item["action"] == "create_stale_gate_incident" for item in report["decisions"]))
+            self.assertTrue((root / "reports" / "scheduling_gate_controller_plan.json").exists())
+        for expected in ["mlops-scheduling-gate-controller", "pods/status", "resourceclaims", "MLOpsSchedulingGateStale", "mlops_scheduling_gate_age_seconds"]:
+            self.assertIn(expected, manifest)
+        for expected in ["Pod Scheduling Readiness", "DRA ResourceClaims", "fails closed", "stale-gate incidents"]:
+            self.assertIn(expected, docs)
+
     def test_inference_gateway_plan_and_kubernetes_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         manifest = (repo / "kubernetes" / "inference-gateway-routing.yaml").read_text(encoding="utf-8")
@@ -826,6 +976,41 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["InferencePool", "InferenceObjective", "endpointPickerRef", "FailOpen", "HTTPRoute", "ChurnEndpointPickerUnavailable"]:
             self.assertIn(expected, manifest)
         for expected in ["Gateway API Inference Extension", "InferencePool", "Endpoint Picker", "InferenceObjective"]:
+            self.assertIn(expected, docs)
+
+    def test_kserve_canary_readiness_plan_and_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        manifest = (repo / "kserve" / "canary-analysis.yaml").read_text(encoding="utf-8")
+        docs = (repo / "docs" / "kserve-canary-readiness.md").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_json(
+                root / "reports" / "release_admission_decision.json",
+                {
+                    "decision": {
+                        "failure_policy": "fail_closed",
+                        "recommended_action": "admit_canary",
+                    }
+                },
+            )
+            report = build_kserve_canary_readiness_plan(root, repo_root=repo)
+
+            self.assertTrue(report["passed"])
+            self.assertEqual(report["traffic_plan"]["canary_percent"], 10)
+            self.assertEqual(
+                report["recommended_action"],
+                "apply_canary_with_server_side_dry_run",
+            )
+            self.assertTrue((root / "reports" / "kserve_canary_readiness_plan.json").exists())
+        for expected in [
+            "--server-side",
+            "--dry-run=server",
+            "--field-manager=mlops-release-controller",
+            "AnalysisTemplate",
+            "successCondition",
+        ]:
+            self.assertIn(expected, manifest)
+        for expected in ["Server-Side Apply", "dry-run", "canary", "Argo analysis"]:
             self.assertIn(expected, docs)
 
     def test_semantic_telemetry_plan_and_collector_assets_exist(self) -> None:
@@ -857,6 +1042,10 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertEqual(report["recommended_action"], "enable_airflow3_release_deadline_alerts")
             self.assertEqual(report["runtime_config"]["AIRFLOW__CALLBACKS__CALLBACK_EXECUTION_TIMEOUT"], "300")
             self.assertTrue(any(policy["name"] == "canary_readiness" for policy in report["deadline_policies"]))
+            self.assertIn("callback_contracts", report)
+            self.assertIn("page_serving_release_owner", report["callback_contracts"])
+            self.assertTrue(all(policy["callback_contract"]["dedupe_key"] for policy in report["deadline_policies"]))
+            self.assertTrue(all("allowed_side_effect" in policy["callback_contract"] for policy in report["deadline_policies"]))
             self.assertTrue((root / "reports" / "deadline_alert_plan.json").exists())
         for expected in ["Deadline Alerts", "legacy Airflow 2 SLA", "MLflow", "rollback"]:
             self.assertIn(expected, docs)
@@ -930,6 +1119,53 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
         for expected in ["Kueue Flavor Fungibility", "ResourceFlavor", "TryNextFlavor", "BorrowingOverPreemption"]:
             self.assertIn(expected, docs)
 
+    def test_concurrent_admission_plan_and_kubernetes_assets_exist(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        docs = (repo / "docs" / "kueue-concurrent-admission.md").read_text(encoding="utf-8")
+        manifest = (repo / "kubernetes" / "kueue-concurrent-admission.yaml").read_text(
+            encoding="utf-8"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = demo(root)
+            report = build_concurrent_admission_plan(root)
+            dashboard = (root / "reports" / "mlops_platform_dashboard.html").read_text(
+                encoding="utf-8"
+            )
+            index = (root / "reports" / "index.html").read_text(encoding="utf-8")
+
+            self.assertTrue(result["concurrent_admission"]["passed"])
+            self.assertTrue(report["passed"])
+            self.assertEqual(
+                report["recommended_action"],
+                "enable_kueue_concurrent_admission_for_release",
+            )
+            self.assertEqual(report["feature"]["migration_mode"], "TryPreferredFlavors")
+            self.assertTrue(any(parent["variants"] for parent in report["parent_workloads"]))
+            self.assertIn("Kueue Concurrent Admission", dashboard)
+            self.assertIn("Kueue Admission Path Lab", dashboard)
+            self.assertIn('data-testid="kueue-admission-path-lab"', dashboard)
+            self.assertIn("function renderAdmissionPath", dashboard)
+            self.assertIn('"release-validation-backfill"', dashboard)
+            self.assertIn("concurrent_admission_plan.json", index)
+            self.assertTrue((root / "reports" / "concurrent_admission_plan.json").exists())
+        for expected in [
+            "ConcurrentAdmission: true",
+            "concurrentAdmissionPolicy",
+            "TryPreferredFlavors",
+            "lastAcceptableFlavorName",
+            "MLOpsConcurrentAdmissionVariantStalled",
+        ]:
+            self.assertIn(expected, manifest)
+        for expected in [
+            "Kueue Concurrent Admission",
+            "Parent Workload",
+            "Variant Workload",
+            "lastAcceptableFlavorName",
+            "alpha",
+        ]:
+            self.assertIn(expected, docs)
+
     def test_pending_workload_visibility_plan_and_kubernetes_assets_exist(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         docs = (repo / "docs" / "kueue-pending-workload-visibility.md").read_text(encoding="utf-8")
@@ -974,6 +1210,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("dynamic_task_mapping", names)
             self.assertIn("kueue_admission", names)
             self.assertIn("semantic_telemetry_contract", names)
+            self.assertIn("kserve_canary_server_side_apply", names)
             self.assertIn("airflow_deadline_alerts", names)
             self.assertIn("opencost_finops", names)
             self.assertIn("kueue_elastic_workloads", names)
@@ -983,11 +1220,14 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertIn("kserve_model_cache", names)
             self.assertIn("airflow_dag_bundle_versioning", names)
             self.assertIn("airflow_asset_partitioning", names)
+            self.assertIn("airflow_stateful_orchestration", names)
             self.assertIn("airflow_multi_team_readiness", names)
             self.assertIn("airflow_event_driven_assets", names)
             self.assertIn("pod_resource_envelopes", names)
+            self.assertIn("scheduling_gate_controller", names)
             self.assertIn("kueue_cohort_fair_sharing", names)
             self.assertIn("kueue_flavor_fungibility", names)
+            self.assertIn("kueue_concurrent_admission", names)
             self.assertIn("kueue_pending_workload_visibility", names)
             self.assertIn("kubernetes_workload_aware_scheduling", names)
             self.assertIn("runtime_security_userns_kubelet_authz", names)
@@ -1045,6 +1285,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
                 "topology_placement_plan.json",
                 "kuberay_capacity_plan.json",
                 "inference_gateway_plan.json",
+                "kserve_canary_readiness_plan.json",
                 "semantic_telemetry_plan.json",
                 "deadline_alert_plan.json",
                 "cost_observability_report.json",
@@ -1055,9 +1296,12 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
                 "model_cache_plan.json",
                 "dag_bundle_versioning_plan.json",
                 "asset_partitioning_plan.json",
+                "airflow_stateful_orchestration_plan.json",
+                "reliability_signal_mesh.html",
                 "multi_team_readiness_plan.json",
                 "event_driven_assets_plan.json",
                 "pod_resource_envelope_plan.json",
+                "scheduling_gate_controller_plan.json",
                 "cohort_fair_sharing_plan.json",
                 "flavor_fungibility_plan.json",
                 "pending_workload_visibility_plan.json",
@@ -1101,6 +1345,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
 
             self.assertEqual(plan["recommended_action"], "advance_canary")
             self.assertEqual(plan["stages"][1]["system"], "kueue")
+            self.assertEqual(plan["thresholds"]["rollback_error_rate"], 0.05)
             self.assertTrue((root / "reports" / "release_control_plan.json").exists())
             self.assertEqual(rollback_policy["action"], "rollback")
 
@@ -1112,7 +1357,24 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue(result["evaluate"]["gate_report"]["passed"])
             self.assertTrue(result["evaluate"]["promotion"]["promoted"])
             self.assertEqual(health(root)["status"], "Ready")
-            self.assertTrue((root / "reports" / "mlops_platform_dashboard.html").exists())
+            dashboard_path = root / "reports" / "mlops_platform_dashboard.html"
+            self.assertTrue(dashboard_path.exists())
+            dashboard = dashboard_path.read_text(encoding="utf-8")
+            self.assertIn("Canary Release Lab", dashboard)
+            self.assertIn("Release Evidence", dashboard)
+            self.assertIn('data-testid="release-evidence"', dashboard)
+            self.assertIn("Run Review", dashboard)
+            self.assertIn('data-testid="run-review"', dashboard)
+            self.assertIn("edge-tts neural narration", dashboard)
+            self.assertIn("function renderDemoTheater", dashboard)
+            self.assertIn("MLflow alias rollback is exercised", dashboard)
+            self.assertIn("Kueue Admission Path Lab", dashboard)
+            self.assertIn("KServe Canary Readiness", dashboard)
+            self.assertIn('data-testid="canary-release-lab"', dashboard)
+            self.assertIn('data-testid="kueue-admission-path-lab"', dashboard)
+            self.assertIn("function evaluateReleasePolicy", dashboard)
+            self.assertIn("function renderAdmissionPath", dashboard)
+            self.assertIn('"rollback_error_rate":0.05', dashboard)
             self.assertTrue((root / "reports" / "index.html").exists())
             self.assertTrue((root / "reports" / "accelerator_capacity_plan.json").exists())
             self.assertTrue((root / "reports" / "device_allocation_plan.json").exists())
@@ -1123,6 +1385,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue((root / "reports" / "topology_placement_plan.json").exists())
             self.assertTrue((root / "reports" / "kuberay_capacity_plan.json").exists())
             self.assertTrue((root / "reports" / "inference_gateway_plan.json").exists())
+            self.assertTrue((root / "reports" / "kserve_canary_readiness_plan.json").exists())
             self.assertTrue((root / "reports" / "semantic_telemetry_plan.json").exists())
             self.assertTrue((root / "reports" / "deadline_alert_plan.json").exists())
             self.assertTrue((root / "reports" / "cost_observability_report.json").exists())
@@ -1135,6 +1398,7 @@ class KubernetesMLOpsPlatformTest(unittest.TestCase):
             self.assertTrue((root / "reports" / "multi_team_readiness_plan.json").exists())
             self.assertTrue((root / "reports" / "event_driven_assets_plan.json").exists())
             self.assertTrue((root / "reports" / "pod_resource_envelope_plan.json").exists())
+            self.assertTrue((root / "reports" / "scheduling_gate_controller_plan.json").exists())
             self.assertTrue((root / "reports" / "cohort_fair_sharing_plan.json").exists())
             self.assertTrue((root / "reports" / "flavor_fungibility_plan.json").exists())
             self.assertTrue((root / "reports" / "pending_workload_visibility_plan.json").exists())

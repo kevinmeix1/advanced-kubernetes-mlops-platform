@@ -1,6 +1,7 @@
 .DS_Store
 .local/
 .venv/
+.demo-venv/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -11,3 +12,6 @@ __pycache__/
 *.duckdb
 *.parquet
 .env
+build/
+dist/
+*.egg-info/

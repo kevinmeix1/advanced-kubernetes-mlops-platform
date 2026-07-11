@@ -2,7 +2,11 @@
 
 `make model-cache` writes `.local/reports/model_cache_plan.json` and pairs it with `kserve/local-model-cache.yaml`.
 
-This project uses the KServe local model cache pattern as a release gate. The training and registry flow still writes MLflow-style metadata, but candidate, champion, and previous-champion artifacts are also represented as immutable modelcar OCI images. Promotion waits until those modelcars are warm on enough serving nodes.
+This project uses the KServe local model cache pattern as a release-gate design.
+The fast lifecycle writes inspectable local metadata, while the executable
+MLflow 3 contract registers immutable versions and manages aliases. The cache
+plan maps those approved versions to digest-pinned modelcar OCI images and
+requires enough downloaded copies before traffic can widen.
 
 ## Operating Model
 

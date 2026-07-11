@@ -7,18 +7,22 @@ from pathlib import Path
 from .accelerator_plan import build_accelerator_capacity_plan
 from .admin_access_diagnostics import build_admin_access_diagnostic_plan
 from .advanced_device_sharing import build_advanced_device_sharing_plan
+from .ai_workload_telemetry import build_ai_workload_telemetry_plan
+from .airflow_stateful_orchestration import build_airflow_stateful_orchestration_plan
 from .asset_partitioning import build_asset_partitioning_plan
 from .artifact_index import render_artifact_index
 from .chaos import run_chaos_drill
 from .cloud_migration import build_cloud_migration_plan
 from .control_plane import build_release_plan
 from .cohort_fair_sharing import build_cohort_fair_sharing_plan
+from .concurrent_admission import build_concurrent_admission_plan
 from .control_plane_diagnostics import build_control_plane_diagnostics_plan
 from .constrained_impersonation import build_constrained_impersonation_plan
 from .cost_observability import build_cost_observability_report
 from .dashboard import render_dashboard
 from .data import generate_churn_dataset, split_rows
 from .dag_bundle_versioning import build_dag_bundle_versioning_plan
+from .demo_cockpit import build_judge_demo_cockpit, build_operator_drill_lab
 from .deadline_alerts import build_deadline_alert_plan
 from .disaster_recovery import build_disaster_recovery_plan
 from .device_allocation import build_device_allocation_plan
@@ -34,6 +38,7 @@ from .indexed_job_resilience import build_indexed_job_resilience_plan
 from .inplace_resize import build_inplace_resize_plan
 from .inference_gateway import build_inference_gateway_plan
 from .io import read_csv, read_json, write_csv, write_json
+from .kserve_canary_readiness import build_kserve_canary_readiness_plan
 from .kuberay_capacity import build_kuberay_capacity_plan
 from .memory_qos import build_memory_qos_plan
 from .model_cache import build_model_cache_plan
@@ -41,8 +46,10 @@ from .model import evaluate_model, train_model
 from .monitoring import build_monitoring_report
 from .multi_team_readiness import build_multi_team_readiness_plan
 from .multikueue_dispatch import build_multikueue_dispatch_plan
+from .narrated_demo_studio import build_narrated_demo_studio
 from .network_security import build_network_security_report
 from .orchestration_scorecard import build_orchestration_scorecard
+from .operational_readiness import build_operational_readiness_review
 from .policy_audit import audit_platform_policy
 from .performance_budget import build_performance_budget_report
 from .pending_workload_visibility import build_pending_workload_visibility_plan
@@ -50,10 +57,12 @@ from .pod_resource_envelopes import build_pod_resource_envelope_plan
 from .provisioning_admission import build_provisioning_admission_plan
 from .queue_simulator import build_queue_simulation
 from .release_admission import build_release_admission_decision
+from .reliability_signal_mesh import build_reliability_signal_mesh
 from .registry import champion_metadata, promote_candidate, register_candidate, rollback as rollback_model, log_mlflow_run
 from .resource_health_status import build_resource_health_status_plan
 from .resource_optimizer import build_resource_optimization_report
 from .runtime_security import build_runtime_security_plan
+from .scheduling_gate_controller import build_scheduling_gate_controller_plan
 from .semantic_telemetry import build_semantic_telemetry_plan
 from .serving import deploy_local_kserve, health, predict
 from .slo import build_slo_report
@@ -70,9 +79,17 @@ def root_path(output: str | Path) -> Path:
     return Path(output)
 
 
-def train(output: str | Path, *, version: str = "2026.07.0") -> dict:
+def train(
+    output: str | Path,
+    *,
+    version: str = "2026.07.0",
+    dataset_seed: int = 42,
+) -> dict:
     root = root_path(output)
-    dataset_path = generate_churn_dataset(root / "data" / "training.csv")
+    dataset_path = generate_churn_dataset(
+        root / "data" / "training.csv",
+        seed=dataset_seed,
+    )
     rows = read_csv(dataset_path)
     validation = validate_dataset(rows)
     write_json(root / "reports" / "data_validation.json", validation)
@@ -92,7 +109,11 @@ def train(output: str | Path, *, version: str = "2026.07.0") -> dict:
         root,
         model=model,
         metrics=metrics["validation"],
-        params={"version": version, "features": model["feature_names"]},
+        params={
+            "version": version,
+            "features": model["feature_names"],
+            "dataset_seed": dataset_seed,
+        },
         artifacts={"candidate_model": str(root / "models" / "candidate" / "model.json")},
     )
     registered = register_candidate(root, model, metrics["validation"])
@@ -154,6 +175,8 @@ def monitor(output: str | Path) -> dict:
     generate_churn_dataset(root / "data" / "current_scoring.csv", rows=240, seed=99, drift=True)
     report = build_monitoring_report(root)
     release_plan = build_release_plan(root)
+    kserve_canary_readiness = build_kserve_canary_readiness_plan(root)
+    concurrent_admission = build_concurrent_admission_plan(root)
     dashboard = render_dashboard(
         root / "reports" / "mlops_platform_dashboard.html",
         validation_report=read_json(root / "reports" / "data_validation.json"),
@@ -162,8 +185,17 @@ def monitor(output: str | Path) -> dict:
         monitoring_report=report,
         registry_metadata=champion_metadata(root),
         release_plan=release_plan,
+        scheduling_gate_controller=build_scheduling_gate_controller_plan(root),
+        kserve_canary_readiness=kserve_canary_readiness,
+        concurrent_admission=concurrent_admission,
     )
-    return {"monitoring": report, "release_plan": release_plan, "dashboard": str(dashboard)}
+    return {
+        "monitoring": report,
+        "release_plan": release_plan,
+        "kserve_canary_readiness": kserve_canary_readiness,
+        "concurrent_admission": concurrent_admission,
+        "dashboard": str(dashboard),
+    }
 
 
 def governance(output: str | Path) -> dict:
@@ -224,11 +256,14 @@ def demo(output: str | Path) -> dict:
     model_cache = build_model_cache_plan(root)
     dag_bundle_versioning = build_dag_bundle_versioning_plan(root)
     asset_partitioning = build_asset_partitioning_plan(root)
+    airflow_stateful_orchestration = build_airflow_stateful_orchestration_plan(root)
     multi_team_readiness = build_multi_team_readiness_plan(root)
     event_driven_assets = build_event_driven_assets_plan(root)
     pod_resource_envelopes = build_pod_resource_envelope_plan(root)
+    scheduling_gate_controller = build_scheduling_gate_controller_plan(root)
     cohort_fair_sharing = build_cohort_fair_sharing_plan(root)
     flavor_fungibility = build_flavor_fungibility_plan(root)
+    concurrent_admission = build_concurrent_admission_plan(root)
     pending_workload_visibility = build_pending_workload_visibility_plan(root)
     tenancy = build_tenancy_report(root)
     identity_access = build_identity_access_report(root)
@@ -241,6 +276,7 @@ def demo(output: str | Path) -> dict:
     hpa_scale_to_zero = build_hpa_scale_to_zero_plan(root)
     suspended_job_resources = build_suspended_job_resource_plan(root)
     constrained_impersonation = build_constrained_impersonation_plan(root)
+    ai_workload_telemetry = build_ai_workload_telemetry_plan(root)
     supply_chain = build_supply_chain_evidence(
         root,
         project="Kubernetes MLOps Platform",
@@ -249,10 +285,38 @@ def demo(output: str | Path) -> dict:
         namespace="mlops",
     )
     release_admission = build_release_admission_decision(root)
+    operational_readiness = build_operational_readiness_review(root)
+    kserve_canary_readiness = build_kserve_canary_readiness_plan(root)
+    judge_demo_cockpit = build_judge_demo_cockpit(
+        root,
+        project_name="Kubernetes MLOps Platform",
+        primary_dashboard="mlops_platform_dashboard.html",
+        demo_video="../../docs/demo/kubernetes-mlops-judge-demo.mp4",
+    )
+    operator_drill = build_operator_drill_lab(
+        root,
+        project_name="Kubernetes MLOps Platform",
+        scenario="Canary release burns error budget while GPU queue pressure delays rollback validation",
+        primary_dashboard="mlops_platform_dashboard.html",
+        runbook="../../docs/runbook.md",
+    )
+    reliability_signal_mesh = build_reliability_signal_mesh(
+        root,
+        project_name="Kubernetes MLOps Platform",
+        domain="Model release and Kubernetes operations",
+        primary_dashboard="mlops_platform_dashboard.html",
+    )
+    narrated_demo_studio = build_narrated_demo_studio(
+        root,
+        project_name="Kubernetes MLOps Platform",
+        domain="Model release and Kubernetes operations",
+        primary_dashboard="mlops_platform_dashboard.html",
+        demo_video="../../docs/demo/kubernetes-mlops-judge-demo.mp4",
+    )
     artifact_index = render_artifact_index(
         root,
         title="Kubernetes MLOps Platform",
-        description="Reviewer landing page for generated dashboard, governance evidence, SLOs, migration, and reliability artifacts.",
+        description="Generated registry for release controls, governance records, SLO budgets, capacity plans, and recovery evidence.",
         dashboard="mlops_platform_dashboard.html",
     )
     orchestration_scorecard = build_orchestration_scorecard(root, project="Kubernetes MLOps Platform")
@@ -292,11 +356,14 @@ def demo(output: str | Path) -> dict:
         "model_cache": model_cache,
         "dag_bundle_versioning": dag_bundle_versioning,
         "asset_partitioning": asset_partitioning,
+        "airflow_stateful_orchestration": airflow_stateful_orchestration,
         "multi_team_readiness": multi_team_readiness,
         "event_driven_assets": event_driven_assets,
         "pod_resource_envelopes": pod_resource_envelopes,
+        "scheduling_gate_controller": scheduling_gate_controller,
         "cohort_fair_sharing": cohort_fair_sharing,
         "flavor_fungibility": flavor_fungibility,
+        "concurrent_admission": concurrent_admission,
         "pending_workload_visibility": pending_workload_visibility,
         "tenancy": tenancy,
         "identity_access": identity_access,
@@ -309,7 +376,14 @@ def demo(output: str | Path) -> dict:
         "hpa_scale_to_zero": hpa_scale_to_zero,
         "suspended_job_resources": suspended_job_resources,
         "constrained_impersonation": constrained_impersonation,
+        "ai_workload_telemetry": ai_workload_telemetry,
         "release_admission": release_admission,
+        "operational_readiness": operational_readiness,
+        "kserve_canary_readiness": kserve_canary_readiness,
+        "judge_demo_cockpit": judge_demo_cockpit,
+        "operator_drill": operator_drill,
+        "reliability_signal_mesh": reliability_signal_mesh,
+        "narrated_demo_studio": narrated_demo_studio,
         "artifact_index": str(artifact_index),
         "orchestration_scorecard": orchestration_scorecard,
         "supply_chain": supply_chain,
@@ -350,6 +424,7 @@ def main(argv: list[str] | None = None) -> int:
         "topology-plan",
         "kuberay-plan",
         "inference-gateway-plan",
+        "kserve-canary-readiness",
         "semantic-telemetry-plan",
         "deadline-alerts-plan",
         "cost-observability",
@@ -360,11 +435,14 @@ def main(argv: list[str] | None = None) -> int:
         "model-cache",
         "dag-bundle-plan",
         "asset-partitioning-plan",
+        "airflow-stateful-orchestration",
         "multi-team-readiness",
         "event-driven-assets",
         "pod-resource-envelopes",
+        "scheduling-gate-controller",
         "cohort-fair-sharing",
         "flavor-fungibility",
+        "concurrent-admission",
         "pending-workload-visibility",
         "tenancy-report",
         "identity-report",
@@ -444,6 +522,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_kuberay_capacity_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "inference-gateway-plan":
         print(json.dumps(build_inference_gateway_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "kserve-canary-readiness":
+        print(json.dumps(build_kserve_canary_readiness_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "semantic-telemetry-plan":
         print(json.dumps(build_semantic_telemetry_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "deadline-alerts-plan":
@@ -464,16 +544,22 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(build_dag_bundle_versioning_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "asset-partitioning-plan":
         print(json.dumps(build_asset_partitioning_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "airflow-stateful-orchestration":
+        print(json.dumps(build_airflow_stateful_orchestration_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "multi-team-readiness":
         print(json.dumps(build_multi_team_readiness_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "event-driven-assets":
         print(json.dumps(build_event_driven_assets_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "pod-resource-envelopes":
         print(json.dumps(build_pod_resource_envelope_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "scheduling-gate-controller":
+        print(json.dumps(build_scheduling_gate_controller_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "cohort-fair-sharing":
         print(json.dumps(build_cohort_fair_sharing_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "flavor-fungibility":
         print(json.dumps(build_flavor_fungibility_plan(args.output), indent=2, sort_keys=True))
+    elif args.command == "concurrent-admission":
+        print(json.dumps(build_concurrent_admission_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "pending-workload-visibility":
         print(json.dumps(build_pending_workload_visibility_plan(args.output), indent=2, sort_keys=True))
     elif args.command == "tenancy-report":
