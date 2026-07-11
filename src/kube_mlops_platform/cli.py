@@ -22,7 +22,7 @@ from .cost_observability import build_cost_observability_report
 from .dashboard import render_dashboard
 from .data import generate_churn_dataset, split_rows
 from .dag_bundle_versioning import build_dag_bundle_versioning_plan
-from .demo_cockpit import build_judge_demo_cockpit
+from .demo_cockpit import build_judge_demo_cockpit, build_operator_drill_lab
 from .deadline_alerts import build_deadline_alert_plan
 from .disaster_recovery import build_disaster_recovery_plan
 from .device_allocation import build_device_allocation_plan
@@ -291,6 +291,13 @@ def demo(output: str | Path) -> dict:
         primary_dashboard="mlops_platform_dashboard.html",
         demo_video="../../docs/demo/kubernetes-mlops-judge-demo.mp4",
     )
+    operator_drill = build_operator_drill_lab(
+        root,
+        project_name="Kubernetes MLOps Platform",
+        scenario="Canary release burns error budget while GPU queue pressure delays rollback validation",
+        primary_dashboard="mlops_platform_dashboard.html",
+        runbook="../../docs/runbook.md",
+    )
     artifact_index = render_artifact_index(
         root,
         title="Kubernetes MLOps Platform",
@@ -359,6 +366,7 @@ def demo(output: str | Path) -> dict:
         "operational_readiness": operational_readiness,
         "kserve_canary_readiness": kserve_canary_readiness,
         "judge_demo_cockpit": judge_demo_cockpit,
+        "operator_drill": operator_drill,
         "artifact_index": str(artifact_index),
         "orchestration_scorecard": orchestration_scorecard,
         "supply_chain": supply_chain,

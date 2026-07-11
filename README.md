@@ -70,9 +70,12 @@ make demo
 make test
 open .local/reports/mlops_platform_dashboard.html
 open .local/reports/judge_demo_cockpit.html
+open .local/reports/operator_drill_lab.html
 ```
 
 ![Judge demo cockpit](docs/screenshots/dashboard-judge-cockpit.jpg)
+
+![Operator drill lab](docs/screenshots/dashboard-operator-drill.png)
 
 The Canary Release Lab begins on HOLD because the generated monitoring report
 contains observed feature drift. Mark the scenario drift check healthy to move
@@ -123,6 +126,8 @@ The contract writes:
 - `.local/reports/mlops_platform_dashboard.html`
 - `.local/reports/judge_demo_cockpit.html`
 - `.local/reports/judge_demo_cockpit_manifest.json`
+- `.local/reports/operator_drill_lab.html`
+- `.local/reports/operator_drill_report.json`
 
 ## MLflow Registry Contract
 
